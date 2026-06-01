@@ -19,7 +19,12 @@ import {
   getUserAccessToken,
 } from '../_shared/spotify.ts'
 
-const SCOPES = ['playlist-modify-public', 'playlist-modify-private', 'user-read-private'].join(' ')
+const SCOPES = [
+  'playlist-modify-public',
+  'playlist-modify-private',
+  'user-read-private',
+  'user-read-email',
+].join(' ')
 const OPENAI_MODEL = Deno.env.get('OPENAI_MODEL') ?? 'gpt-4o-mini'
 
 function getAppUrl(): string {

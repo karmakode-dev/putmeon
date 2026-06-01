@@ -273,13 +273,16 @@ export async function exchangeAuthCode(code: string, codeVerifier: string): Prom
   refresh_token: string
   expires_in: number
 }> {
-  const { clientId } = getSpotifyCredentials()
+  const { clientId, clientSecret } = getSpotifyCredentials()
   const redirectUri = getSpotifyRedirectUri()
   if (!redirectUri) throw new Error('SPOTIFY_REDIRECT_URI is not configured.')
 
   const response = await fetch(SPOTIFY_TOKEN_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: {
+      Authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
     body: new URLSearchParams({
       grant_type: 'authorization_code',
       code,
@@ -291,17 +294,32 @@ export async function exchangeAuthCode(code: string, codeVerifier: string): Prom
 
   if (!response.ok) {
     const err = await response.text()
-    throw new Error(`Spotify token exchange failed: ${err}`)
+    throw new Error(parseSpotifyError('Spotify token exchange failed', err))
   }
 
-  return response.json()
+  const tokens = await response.json()
+  if (!tokens.access_token) {
+    throw new Error('Spotify did not return an access token.')
+  }
+
+  return tokens
 }
 
 export async function fetchSpotifyProfile(accessToken: string): Promise<{ id: string; display_name: string | null }> {
   const response = await fetch(`${SPOTIFY_API}/me`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
-  if (!response.ok) throw new Error('Failed to fetch Spotify profile.')
+  if (!response.ok) {
+    const err = await response.text()
+    const message = parseSpotifyError('Failed to fetch Spotify profile', err)
+    if (response.status === 403) {
+      throw new Error(
+        `${message} Add your Spotify account under User Management in the Spotify Developer Dashboard (dev mode allows up to 5 users).`
+      )
+    }
+    throw new Error(message)
+  }
   const profile = await response.json()
+  if (!profile.id) throw new Error('Spotify profile response was missing a user id.')
   return { id: profile.id, display_name: profile.display_name ?? profile.id }
 }

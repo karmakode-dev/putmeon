@@ -38,7 +38,13 @@ export default function ReviewPage() {
   const [error, setError] = useState<string | null>(() => {
     if (!isBackendConfigured()) return null
     const spotifyError = new URLSearchParams(window.location.search).get('spotify_error')
-    return spotifyError ? decodeURIComponent(spotifyError) : null
+    if (!spotifyError) return null
+    const decoded = decodeURIComponent(spotifyError)
+    if (decoded.includes('User Management')) return decoded
+    if (decoded.toLowerCase().includes('failed to fetch spotify profile')) {
+      return `${decoded} If you are testing in Spotify dev mode, add your Spotify email under User Management in the Spotify Developer Dashboard.`
+    }
+    return decoded
   })
   const [filter, setFilter] = useState<'all' | 'matched' | 'possible' | 'failed'>('all')
   const [newTitle, setNewTitle] = useState('')
