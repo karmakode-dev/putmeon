@@ -1,10 +1,10 @@
 export const env = {
   appName: 'PutMeOn',
-  appUrl: import.meta.env.VITE_APP_URL ?? 'https://putmeon.app',
+  appUrl: import.meta.env.VITE_APP_URL ?? 'https://putmeon.karmakode.co',
   apiUrl: import.meta.env.VITE_API_URL ?? '',
   useMockApi: import.meta.env.VITE_USE_MOCK_API !== 'false',
   spotifyClientId: import.meta.env.VITE_SPOTIFY_CLIENT_ID ?? '',
-  contactEmail: import.meta.env.VITE_CONTACT_EMAIL ?? 'hello@putmeon.app',
+  contactEmail: import.meta.env.VITE_CONTACT_EMAIL ?? 'Karmakode.dev@gmail.com',
   openaiApiKey: import.meta.env.VITE_OPENAI_API_KEY ?? '',
   openaiModel: import.meta.env.VITE_OPENAI_MODEL ?? 'gpt-4o-mini',
   useOpenAiVision: import.meta.env.VITE_USE_OPENAI_VISION !== 'false',

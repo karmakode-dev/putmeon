@@ -32,17 +32,19 @@ supabase secrets set OPENAI_MODEL=gpt-4o-mini
 supabase secrets set SPOTIFY_CLIENT_ID=your_client_id
 supabase secrets set SPOTIFY_CLIENT_SECRET=your_client_secret
 supabase secrets set SPOTIFY_REDIRECT_URI=https://YOUR_PROJECT.supabase.co/functions/v1/api/auth/spotify/callback
-supabase secrets set APP_URL=http://localhost:5173
+supabase secrets set APP_URL=https://putmeon.karmakode.co
 ```
 
-For production, set `APP_URL` to your deployed frontend URL (e.g. `https://putmeon.app`).
+For local dev only, use `APP_URL=http://localhost:5173`.
 
 ## 4. Spotify Developer App
 
 In your Spotify app settings:
 
-- **Redirect URI:** `https://YOUR_PROJECT.supabase.co/functions/v1/api/auth/spotify/callback`
-- **Scopes used:** `playlist-modify-public`, `playlist-modify-private`, `user-read-private`
+- **Redirect URI:** `https://ezfnycxrvhclxrdbzrxg.supabase.co/functions/v1/api/auth/spotify/callback` (Supabase — not your frontend domain)
+- **Website:** `https://putmeon.karmakode.co`
+- **Privacy Policy URL:** `https://putmeon.karmakode.co/privacy`
+- **Scopes used:** `playlist-modify-public`, `playlist-modify-private`, `user-read-private`, `user-read-email`
 
 ## 5. Deploy Edge Function
 
