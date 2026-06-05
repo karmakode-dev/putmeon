@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import Button from '../components/Button'
 import Alert from '../components/Alert'
 import SongRow from '../components/SongRow'
+import SharePlaylistPanel from '../components/SharePlaylistPanel'
 import { useApp } from '../context/AppContext'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { parsePastedSongList } from '../services/pasteListParser'
-import { env, isBackendConfigured } from '../config/env'
+import { env } from '../config/env'
 import type { MatchedSong } from '../types'
 
 function toMatchedSongs(parsed: { title: string; artist: string }[]): MatchedSong[] {
@@ -33,10 +34,12 @@ export default function CuratePage() {
     songs,
     playlistName,
     playlistDescription,
+    shareUrl,
     setSongs,
     setPlaylistName,
     setPlaylistDescription,
     setEntrySource,
+    setShareUrl,
     addSong,
     removeSong,
     updateSong,
@@ -59,25 +62,28 @@ export default function CuratePage() {
     setPasteText('')
   }
 
-  const handleContinue = () => {
+  const handleExportSpotify = () => {
     if (songs.length === 0) {
-      setError('Add at least one song before continuing.')
+      setError('Add at least one song before exporting.')
       return
     }
     if (!playlistName.trim()) {
       setError('Enter a playlist name.')
       return
     }
+    setError(null)
     setEntrySource('curate')
     navigate('/review')
   }
+
+  const hasList = songs.length > 0
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
       <div className="mb-8 animate-slide-up">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">Curate Playlist</h1>
         <p className="text-muted text-sm">
-          Build a playlist without screenshots — paste a list or add songs one by one.
+          Build your list, share it with PutMeOn, or export to a streaming app.
         </p>
       </div>
 
@@ -161,13 +167,16 @@ export default function CuratePage() {
           </div>
         </div>
 
-        {songs.length > 0 && (
+        {hasList && (
           <div className="rounded-2xl border border-border bg-card overflow-hidden">
             <div className="px-4 py-3 border-b border-border flex items-center justify-between">
               <p className="text-sm font-medium">{songs.length} songs</p>
               <button
                 type="button"
-                onClick={() => setSongs([])}
+                onClick={() => {
+                  setSongs([])
+                  setShareUrl(null)
+                }}
                 className="text-xs text-muted hover:text-white transition-colors"
               >
                 Clear all
@@ -191,22 +200,41 @@ export default function CuratePage() {
           </div>
         )}
 
+        {hasList && (
+          <div className="space-y-4 rounded-2xl border border-border bg-card p-4">
+            <p className="text-xs font-medium text-muted uppercase tracking-wider">Next steps</p>
+
+            <SharePlaylistPanel
+              songs={songs}
+              playlistName={playlistName}
+              playlistDescription={playlistDescription}
+              shareUrl={shareUrl}
+              onShareUrl={setShareUrl}
+            />
+
+            <div className="border-t border-border pt-4 space-y-3">
+              <div>
+                <p className="text-sm font-semibold">Export to streaming</p>
+                <p className="text-xs text-muted mt-1">
+                  Match songs and create a playlist in your library. More platforms coming soon.
+                </p>
+              </div>
+              <Button size="lg" className="w-full" onClick={handleExportSpotify}>
+                <svg className="h-5 w-5 text-spotify" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 14.36c-.2.32-.62.42-.94.22-2.58-1.58-5.84-1.94-9.68-1.06-.36.08-.72-.16-.8-.52-.08-.36.16-.72.52-.8 4.24-.96 7.88-.56 10.76 1.14.32.2.42.62.14.92z" />
+                </svg>
+                Export to Spotify
+              </Button>
+              <p className="text-xs text-muted text-center text-white/40">Apple Music · YouTube Music — soon</p>
+            </div>
+          </div>
+        )}
+
         {error && <Alert variant="error">{error}</Alert>}
 
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button size="lg" className="flex-1" onClick={handleContinue} disabled={songs.length === 0}>
-            Continue to Spotify
-          </Button>
-          <Button variant="secondary" size="lg" to="/upload">
-            Upload instead
-          </Button>
-        </div>
-
-        {isBackendConfigured() && (
-          <p className="text-xs text-muted text-center">
-            Next: connect Spotify to match songs and create your playlist.
-          </p>
-        )}
+        <Button variant="secondary" size="lg" className="w-full" to="/upload">
+          Upload screenshot instead
+        </Button>
       </div>
     </div>
   )

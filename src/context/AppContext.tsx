@@ -13,6 +13,7 @@ interface PersistedState {
   playlistName: string
   playlistDescription: string
   entrySource: EntrySource
+  shareUrl: string | null
 }
 
 interface AppState extends PersistedState {
@@ -30,6 +31,7 @@ interface AppState extends PersistedState {
   setPlaylistName: (name: string) => void
   setPlaylistDescription: (description: string) => void
   setEntrySource: (source: EntrySource) => void
+  setShareUrl: (url: string | null) => void
   reset: () => void
 }
 
@@ -41,6 +43,7 @@ const defaultPersisted: PersistedState = {
   playlistName: 'PutMeOn Playlist',
   playlistDescription: '',
   entrySource: 'scan',
+  shareUrl: null,
 }
 
 function loadPersisted(): PersistedState {
@@ -79,6 +82,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [playlistName, setPlaylistNameState] = useState(persisted.playlistName)
   const [playlistDescription, setPlaylistDescriptionState] = useState(persisted.playlistDescription)
   const [entrySource, setEntrySourceState] = useState<EntrySource>(persisted.entrySource)
+  const [shareUrl, setShareUrlState] = useState<string | null>(persisted.shareUrl ?? null)
 
   useEffect(() => {
     savePersisted({
@@ -89,8 +93,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       playlistName,
       playlistDescription,
       entrySource,
+      shareUrl,
     })
-  }, [songs, spotifyConnected, spotifyUsername, playlistResult, playlistName, playlistDescription, entrySource])
+  }, [songs, spotifyConnected, spotifyUsername, playlistResult, playlistName, playlistDescription, entrySource, shareUrl])
 
   const setUploadedFiles = useCallback((files: File[]) => setUploadedFilesState(files), [])
   const setImagePreviews = useCallback((previews: string[]) => setImagePreviewsState(previews), [])
@@ -99,6 +104,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setPlaylistName = useCallback((name: string) => setPlaylistNameState(name), [])
   const setPlaylistDescription = useCallback((description: string) => setPlaylistDescriptionState(description), [])
   const setEntrySource = useCallback((source: EntrySource) => setEntrySourceState(source), [])
+  const setShareUrl = useCallback((url: string | null) => setShareUrlState(url), [])
 
   const setSpotifyConnected = useCallback((connected: boolean, username?: string) => {
     setSpotifyConnectedState(connected)
@@ -154,6 +160,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setPlaylistNameState('PutMeOn Playlist')
     setPlaylistDescriptionState('')
     setEntrySourceState('scan')
+    setShareUrlState(null)
     sessionStorage.removeItem(STORAGE_KEY)
     clearSpotifySessionId()
   }, [])
@@ -169,6 +176,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       playlistName,
       playlistDescription,
       entrySource,
+      shareUrl,
       setUploadedFiles,
       setImagePreviews,
       setSongs,
@@ -181,6 +189,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setPlaylistName,
       setPlaylistDescription,
       setEntrySource,
+      setShareUrl,
       reset,
     }),
     [
@@ -193,6 +202,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       playlistName,
       playlistDescription,
       entrySource,
+      shareUrl,
       setUploadedFiles,
       setImagePreviews,
       setSongs,
@@ -205,6 +215,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setPlaylistName,
       setPlaylistDescription,
       setEntrySource,
+      setShareUrl,
       reset,
     ]
   )

@@ -9,7 +9,7 @@ import { env } from '../config/env'
 export default function SuccessPage() {
   useDocumentTitle('Playlist Created')
   const navigate = useNavigate()
-  const { playlistResult, entrySource, reset } = useApp()
+  const { playlistResult, entrySource, shareUrl, reset } = useApp()
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
@@ -23,10 +23,12 @@ export default function SuccessPage() {
     navigate(entrySource === 'curate' ? '/curate' : '/upload')
   }
 
+  const displayShareUrl = playlistResult.shareUrl ?? shareUrl
+
   const handleCopyShare = async () => {
-    if (!playlistResult.shareUrl) return
+    if (!displayShareUrl) return
     try {
-      await navigator.clipboard.writeText(playlistResult.shareUrl)
+      await navigator.clipboard.writeText(displayShareUrl)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
@@ -65,7 +67,7 @@ export default function SuccessPage() {
           </div>
         </div>
 
-        {playlistResult.shareUrl && (
+        {(playlistResult.shareUrl || shareUrl) && (
           <div className="rounded-2xl border border-spotify/30 bg-spotify/5 p-4 mb-8 text-left">
             <p className="text-sm font-medium mb-2">Shareable link</p>
             <p className="text-xs text-muted mb-3">
@@ -74,7 +76,7 @@ export default function SuccessPage() {
             <div className="flex flex-col sm:flex-row gap-2">
               <input
                 readOnly
-                value={playlistResult.shareUrl}
+                value={playlistResult.shareUrl ?? shareUrl ?? ''}
                 aria-label="Shareable playlist link"
                 className="flex-1 rounded-xl border border-border bg-bg px-3 py-2 text-xs text-muted truncate"
               />
@@ -83,7 +85,7 @@ export default function SuccessPage() {
               </Button>
             </div>
             <a
-              href={playlistResult.shareUrl}
+              href={displayShareUrl ?? '#'}
               className="inline-block mt-3 text-xs text-spotify hover:text-spotify-hover"
             >
               Open shared page
@@ -91,7 +93,7 @@ export default function SuccessPage() {
           </div>
         )}
 
-        {!playlistResult.shareUrl && !env.useMockApi && (
+        {!displayShareUrl && !env.useMockApi && (
           <Alert variant="info" className="mb-8 text-left text-sm">
             Share link could not be saved. Your Spotify playlist was still created.
           </Alert>

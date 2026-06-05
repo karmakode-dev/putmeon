@@ -4,6 +4,7 @@ import SongRow from '../components/SongRow'
 import Button from '../components/Button'
 import Alert from '../components/Alert'
 import SpotifyConnectButton from '../components/SpotifyConnectButton'
+import SharePlaylistPanel from '../components/SharePlaylistPanel'
 import { useApp } from '../context/AppContext'
 import { createSpotifyPlaylist, matchSongsWithSpotify } from '../services/api'
 import { saveSpotifySessionFromCallback, verifySpotifySession, clearSpotifySessionId } from '../services/apiClient'
@@ -19,6 +20,8 @@ export default function ReviewPage() {
     playlistName,
     playlistDescription,
     entrySource,
+    shareUrl,
+    setShareUrl,
     updateSong,
     removeSong,
     addSong,
@@ -130,7 +133,7 @@ export default function ReviewPage() {
     setError(null)
     try {
       const result = await createSpotifyPlaylist(songs, playlistName, playlistDescription)
-      setPlaylistResult(result)
+      setPlaylistResult(shareUrl ? { ...result, shareUrl } : result)
       navigate('/success', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create playlist. Please try again.')
@@ -285,6 +288,19 @@ export default function ReviewPage() {
       </div>
 
       <div className="space-y-4 animate-slide-up" style={{ animationDelay: '150ms' }}>
+        {(entrySource === 'curate' || shareUrl) && (
+          <SharePlaylistPanel
+            songs={songs}
+            playlistName={playlistName}
+            playlistDescription={playlistDescription}
+            shareUrl={shareUrl}
+            onShareUrl={setShareUrl}
+            compact
+          />
+        )}
+
+        <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+          <p className="text-xs font-medium text-muted uppercase tracking-wider">Export to Spotify</p>
         <div>
           <label htmlFor="playlist-name" className="block text-sm font-medium mb-2">
             Playlist name
@@ -349,6 +365,7 @@ export default function ReviewPage() {
         {awaitingMatch && spotifyConnected && (
           <p className="text-xs text-muted text-center">Matching in progress — create playlist once matches appear</p>
         )}
+        </div>
       </div>
     </div>
   )
