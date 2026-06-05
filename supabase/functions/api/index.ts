@@ -31,6 +31,13 @@ function getAppUrl(): string {
   return Deno.env.get('APP_URL') ?? 'http://localhost:5173'
 }
 
+function generatePublicId(): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
+  const bytes = new Uint8Array(10)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, (b) => chars[b % chars.length]).join('')
+}
+
 function toPendingSongs(songs: DetectedSong[]): MatchedSong[] {
   return songs.map((s) => ({ ...s, status: 'pending' as const }))
 }
@@ -213,6 +220,59 @@ async function handleSpotifyMe(req: Request): Promise<Response> {
   )
 }
 
+async function handleSaveSharedPlaylist(req: Request): Promise<Response> {
+  const body = await req.json()
+  const name = (body.name as string | undefined)?.trim()
+  const description = (body.description as string | undefined)?.trim() || null
+  const songs = body.songs
+
+  if (!name || !Array.isArray(songs) || songs.length === 0) {
+    return errorResponse('Invalid playlist payload.', req)
+  }
+
+  const publicId = generatePublicId()
+  const supabase = getServiceClient()
+  const { error } = await supabase.from('shared_playlists').insert({
+    public_id: publicId,
+    name,
+    description,
+    songs,
+  })
+
+  if (error) {
+    console.error('save playlist error:', error)
+    return errorResponse('Failed to save playlist.', req, 500)
+  }
+
+  const shareUrl = `${getAppUrl()}/p/${publicId}`
+  return jsonResponse({ publicId, shareUrl }, req)
+}
+
+async function handleGetSharedPlaylist(req: Request, publicId: string): Promise<Response> {
+  if (!publicId || publicId.length > 32) {
+    return errorResponse('Invalid playlist id.', req, 400)
+  }
+
+  const supabase = getServiceClient()
+  const { data, error } = await supabase
+    .from('shared_playlists')
+    .select('public_id, name, description, songs')
+    .eq('public_id', publicId)
+    .maybeSingle()
+
+  if (error || !data) return errorResponse('Playlist not found.', req, 404)
+
+  return jsonResponse(
+    {
+      publicId: data.public_id,
+      name: data.name,
+      description: data.description,
+      songs: data.songs,
+    },
+    req
+  )
+}
+
 async function handleCreatePlaylist(req: Request): Promise<Response> {
   const sessionId = getSpotifySessionId(req)
   if (!sessionId) return errorResponse('Connect Spotify before creating a playlist.', req, 401)
@@ -253,6 +313,11 @@ Deno.serve(async (req) => {
     if (path === '/auth/spotify/callback' && req.method === 'GET') return await handleSpotifyCallback(req)
     if (path === '/auth/spotify/me' && req.method === 'GET') return await handleSpotifyMe(req)
     if (path === '/playlist' && req.method === 'POST') return await handleCreatePlaylist(req)
+    if (path === '/playlists' && req.method === 'POST') return await handleSaveSharedPlaylist(req)
+    if (path.startsWith('/playlists/') && req.method === 'GET') {
+      const publicId = path.slice('/playlists/'.length)
+      return await handleGetSharedPlaylist(req, publicId)
+    }
 
     return errorResponse(`Not found: ${path}`, req, 404)
   } catch (err) {

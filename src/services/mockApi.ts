@@ -1,8 +1,11 @@
 import { matchSongsToSpotify } from '../data/mockSongs'
 import { detectSongsFromImages } from './songDetection'
-import type { DetectedSong, MatchedSong, PlaylistResult, ScanResult } from '../types'
+import type { DetectedSong, MatchedSong, PlaylistResult, ScanResult, SharedPlaylist } from '../types'
+import { env } from '../config/env'
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const mockSharedPlaylists = new Map<string, SharedPlaylist>()
 
 export async function detectSongsFromImagesForScan(files: File[]): Promise<DetectedSong[]> {
   const { songs } = await detectSongsFromImages(files)
@@ -36,16 +39,43 @@ export async function connectSpotify(): Promise<{ connected: boolean; username: 
   return { connected: true, username: 'musiclover' }
 }
 
+export async function saveSharedPlaylist(
+  name: string,
+  songs: MatchedSong[],
+  description?: string
+): Promise<{ publicId: string; shareUrl: string }> {
+  await delay(300)
+  const publicId = `mock-${Date.now().toString(36)}`
+  mockSharedPlaylists.set(publicId, {
+    publicId,
+    name,
+    description: description?.trim() || null,
+    songs,
+  })
+  return { publicId, shareUrl: `${env.appUrl}/p/${publicId}` }
+}
+
+export async function fetchSharedPlaylist(publicId: string): Promise<SharedPlaylist> {
+  await delay(400)
+  const playlist = mockSharedPlaylists.get(publicId)
+  if (!playlist) throw new Error('Playlist not found.')
+  return playlist
+}
+
 export async function createSpotifyPlaylist(
   songs: MatchedSong[],
-  name = 'PutMeOn Playlist'
+  name = 'PutMeOn Playlist',
+  description?: string
 ): Promise<PlaylistResult> {
   await delay(2000)
   const matchedTracks = songs.filter((s) => s.status === 'matched' || s.status === 'possible')
+  const share = await saveSharedPlaylist(name, songs, description)
   return {
     id: `mock-playlist-${Date.now()}`,
     name,
     url: 'https://open.spotify.com/playlist/mock123',
     trackCount: matchedTracks.length,
+    shareId: share.publicId,
+    shareUrl: share.shareUrl,
   }
 }

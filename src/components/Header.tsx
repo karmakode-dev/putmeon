@@ -37,6 +37,12 @@ export default function Header() {
 
         <div className="flex items-center gap-2">
           <Link
+            to="/curate"
+            className="hidden sm:inline-flex rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:text-white hover:bg-card transition-colors"
+          >
+            Curate
+          </Link>
+          <Link
             to="/upload"
             className="rounded-lg bg-spotify px-4 py-2 text-sm font-semibold text-black hover:bg-spotify-hover transition-colors"
           >
@@ -78,6 +84,13 @@ export default function Header() {
           >
             Example
           </a>
+          <Link
+            to="/curate"
+            className="block rounded-lg px-3 py-2 text-sm text-muted hover:text-white hover:bg-card transition-colors"
+            onClick={() => setMenuOpen(false)}
+          >
+            Curate Playlist
+          </Link>
           <Link
             to="/privacy"
             className="block rounded-lg px-3 py-2 text-sm text-muted hover:text-white hover:bg-card transition-colors"

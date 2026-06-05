@@ -1,5 +1,5 @@
 import { env } from '../config/env'
-import type { DetectedSong, MatchedSong, PlaylistResult, ScanResult } from '../types'
+import type { DetectedSong, MatchedSong, PlaylistResult, ScanResult, SharedPlaylist } from '../types'
 
 type ApiModule = typeof import('./mockApi') | typeof import('./apiClient')
 
@@ -34,11 +34,25 @@ export async function matchSongsWithSpotify(songs: DetectedSong[]): Promise<Matc
 
 export async function createSpotifyPlaylist(
   songs: MatchedSong[],
-  name?: string
+  name?: string,
+  description?: string
 ): Promise<PlaylistResult> {
   const api = await loadApi()
-  return api.createSpotifyPlaylist(songs, name)
+  return api.createSpotifyPlaylist(songs, name, description)
 }
 
-// Re-export types used by callers if needed
-export type { DetectedSong, MatchedSong, PlaylistResult, ScanResult }
+export async function saveSharedPlaylist(
+  name: string,
+  songs: MatchedSong[],
+  description?: string
+): Promise<{ publicId: string; shareUrl: string }> {
+  const api = await loadApi()
+  return api.saveSharedPlaylist(name, songs, description)
+}
+
+export async function fetchSharedPlaylist(publicId: string): Promise<SharedPlaylist> {
+  const api = await loadApi()
+  return api.fetchSharedPlaylist(publicId)
+}
+
+export type { DetectedSong, MatchedSong, PlaylistResult, ScanResult, SharedPlaylist }

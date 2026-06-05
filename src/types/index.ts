@@ -31,4 +31,15 @@ export interface PlaylistResult {
   name: string
   url: string
   trackCount: number
+  shareId?: string
+  shareUrl?: string
 }
+
+export interface SharedPlaylist {
+  publicId: string
+  name: string
+  description: string | null
+  songs: MatchedSong[]
+}
+
+export type EntrySource = 'scan' | 'curate'

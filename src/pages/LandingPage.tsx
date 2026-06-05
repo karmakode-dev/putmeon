@@ -137,6 +137,9 @@ export default function LandingPage() {
               <Button to="/upload" size="lg">
                 Upload Screenshot
               </Button>
+              <Button to="/curate" variant="secondary" size="lg">
+                Curate Playlist
+              </Button>
               <a
                 href="#example"
                 className="inline-flex items-center justify-center gap-2 px-8 py-3.5 text-base rounded-xl bg-card border border-border text-white hover:bg-card-hover transition-all duration-200 font-medium"

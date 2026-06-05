@@ -4,6 +4,8 @@ import ErrorBoundary from './components/ErrorBoundary'
 import Layout from './components/Layout'
 import LandingPage from './pages/LandingPage'
 import UploadPage from './pages/UploadPage'
+import CuratePage from './pages/CuratePage'
+import SharedPlaylistPage from './pages/SharedPlaylistPage'
 import ProcessingPage from './pages/ProcessingPage'
 import ReviewPage from './pages/ReviewPage'
 import SuccessPage from './pages/SuccessPage'
@@ -30,6 +32,8 @@ export default function App() {
               <Route path="*" element={<NotFoundPage />} />
             </Route>
             <Route element={<FlowLayout />}>
+              <Route path="curate" element={<CuratePage />} />
+              <Route path="p/:publicId" element={<SharedPlaylistPage />} />
               <Route path="upload" element={<UploadPage />} />
               <Route path="processing" element={<ProcessingPage />} />
               <Route path="review" element={<ReviewPage />} />

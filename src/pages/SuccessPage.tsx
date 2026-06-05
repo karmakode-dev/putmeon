@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '../components/Button'
+import Alert from '../components/Alert'
 import { useApp } from '../context/AppContext'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { env } from '../config/env'
@@ -8,7 +9,8 @@ import { env } from '../config/env'
 export default function SuccessPage() {
   useDocumentTitle('Playlist Created')
   const navigate = useNavigate()
-  const { playlistResult, reset } = useApp()
+  const { playlistResult, entrySource, reset } = useApp()
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (!playlistResult) navigate('/upload', { replace: true })
@@ -18,7 +20,18 @@ export default function SuccessPage() {
 
   const handleCreateAnother = () => {
     reset()
-    navigate('/upload')
+    navigate(entrySource === 'curate' ? '/curate' : '/upload')
+  }
+
+  const handleCopyShare = async () => {
+    if (!playlistResult.shareUrl) return
+    try {
+      await navigator.clipboard.writeText(playlistResult.shareUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // fallback: select not implemented
+    }
   }
 
   return (
@@ -51,6 +64,38 @@ export default function SuccessPage() {
             </div>
           </div>
         </div>
+
+        {playlistResult.shareUrl && (
+          <div className="rounded-2xl border border-spotify/30 bg-spotify/5 p-4 mb-8 text-left">
+            <p className="text-sm font-medium mb-2">Shareable link</p>
+            <p className="text-xs text-muted mb-3">
+              Anyone with this link can view the song list and export it to their own Spotify.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                readOnly
+                value={playlistResult.shareUrl}
+                aria-label="Shareable playlist link"
+                className="flex-1 rounded-xl border border-border bg-bg px-3 py-2 text-xs text-muted truncate"
+              />
+              <Button variant="secondary" size="sm" onClick={handleCopyShare}>
+                {copied ? 'Copied!' : 'Copy link'}
+              </Button>
+            </div>
+            <a
+              href={playlistResult.shareUrl}
+              className="inline-block mt-3 text-xs text-spotify hover:text-spotify-hover"
+            >
+              Open shared page
+            </a>
+          </div>
+        )}
+
+        {!playlistResult.shareUrl && !env.useMockApi && (
+          <Alert variant="info" className="mb-8 text-left text-sm">
+            Share link could not be saved. Your Spotify playlist was still created.
+          </Alert>
+        )}
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button

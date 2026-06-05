@@ -1,4 +1,4 @@
-import type { DetectedSong, MatchedSong, PlaylistResult, ScanResult } from '../types'
+import type { DetectedSong, MatchedSong, PlaylistResult, ScanResult, SharedPlaylist } from '../types'
 import { env } from '../config/env'
 import { clearSpotifySessionId, getSpotifySessionId, setSpotifySessionId } from './spotifySession'
 
@@ -109,15 +109,38 @@ export function saveSpotifySessionFromCallback(sessionId: string): void {
 
 export async function createSpotifyPlaylist(
   songs: MatchedSong[],
-  name = 'PutMeOn Playlist'
+  name = 'PutMeOn Playlist',
+  description?: string
 ): Promise<PlaylistResult> {
   if (!getSpotifySessionId()) {
     throw new ApiError('Connect Spotify before creating a playlist.')
   }
-  return request<PlaylistResult>('/playlist', {
+  const result = await request<PlaylistResult>('/playlist', {
     method: 'POST',
     body: JSON.stringify({ songs, name }),
   })
+
+  try {
+    const share = await saveSharedPlaylist(name, songs, description)
+    return { ...result, shareId: share.publicId, shareUrl: share.shareUrl }
+  } catch {
+    return result
+  }
+}
+
+export async function saveSharedPlaylist(
+  name: string,
+  songs: MatchedSong[],
+  description?: string
+): Promise<{ publicId: string; shareUrl: string }> {
+  return request<{ publicId: string; shareUrl: string }>('/playlists', {
+    method: 'POST',
+    body: JSON.stringify({ name, description: description?.trim() || null, songs }),
+  })
+}
+
+export async function fetchSharedPlaylist(publicId: string): Promise<SharedPlaylist> {
+  return request<SharedPlaylist>(`/playlists/${encodeURIComponent(publicId)}`)
 }
 
 export { clearSpotifySessionId, getSpotifySessionId }

@@ -9,9 +9,22 @@ interface SongRowProps {
   index: number
   onRemove: (id: string) => void
   onUpdate: (id: string, song: MatchedSong) => void
+  onReorder?: (id: string, direction: 'up' | 'down') => void
+  canMoveUp?: boolean
+  canMoveDown?: boolean
+  showStatus?: boolean
 }
 
-export default function SongRow({ song, index, onRemove, onUpdate }: SongRowProps) {
+export default function SongRow({
+  song,
+  index,
+  onRemove,
+  onUpdate,
+  onReorder,
+  canMoveUp = false,
+  canMoveDown = false,
+  showStatus = true,
+}: SongRowProps) {
   const [retrying, setRetrying] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(song.title)
@@ -99,8 +112,34 @@ export default function SongRow({ song, index, onRemove, onUpdate }: SongRowProp
           </p>
         )}
       </div>
-      <StatusBadge status={song.status} />
+      {showStatus && <StatusBadge status={song.status} />}
       <div className="flex items-center gap-1">
+        {onReorder && (
+          <div className="flex flex-col gap-0.5 mr-1">
+            <button
+              type="button"
+              disabled={!canMoveUp}
+              onClick={() => onReorder(song.id, 'up')}
+              aria-label={`Move ${displayTitle} up`}
+              className="rounded p-0.5 text-muted hover:text-white disabled:opacity-30 disabled:pointer-events-none"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              disabled={!canMoveDown}
+              onClick={() => onReorder(song.id, 'down')}
+              aria-label={`Move ${displayTitle} down`}
+              className="rounded p-0.5 text-muted hover:text-white disabled:opacity-30 disabled:pointer-events-none"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
+        )}
         <Button variant="ghost" size="sm" onClick={startEdit} aria-label={`Edit ${displayTitle}`}>
           Edit
         </Button>

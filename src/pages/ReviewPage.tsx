@@ -17,9 +17,12 @@ export default function ReviewPage() {
     spotifyConnected,
     spotifyUsername,
     playlistName,
+    playlistDescription,
+    entrySource,
     updateSong,
     removeSong,
     addSong,
+    reorderSong,
     setSpotifyConnected,
     setPlaylistResult,
     setPlaylistName,
@@ -72,8 +75,10 @@ export default function ReviewPage() {
   }
 
   useEffect(() => {
-    if (songs.length === 0) navigate('/upload', { replace: true })
-  }, [songs, navigate])
+    if (songs.length === 0) {
+      navigate(entrySource === 'curate' ? '/curate' : '/upload', { replace: true })
+    }
+  }, [songs, navigate, entrySource])
 
   useEffect(() => {
     if (!isBackendConfigured()) return
@@ -124,7 +129,7 @@ export default function ReviewPage() {
     setCreating(true)
     setError(null)
     try {
-      const result = await createSpotifyPlaylist(songs, playlistName)
+      const result = await createSpotifyPlaylist(songs, playlistName, playlistDescription)
       setPlaylistResult(result)
       navigate('/success', { replace: true })
     } catch (err) {
@@ -142,9 +147,14 @@ export default function ReviewPage() {
         </h1>
         <p className="text-muted text-sm">
           {awaitingMatch
-            ? `${songs.length} songs detected — edit if needed, then connect Spotify`
+            ? entrySource === 'curate'
+              ? `${songs.length} songs in your list — edit if needed, then connect Spotify`
+              : `${songs.length} songs detected — edit if needed, then connect Spotify`
             : `${playableCount} / ${songs.length} songs matched on Spotify`}
         </p>
+        {playlistDescription.trim() && (
+          <p className="text-sm text-muted/80 mt-2 max-w-xl">{playlistDescription}</p>
+        )}
       </div>
 
       {env.useMockApi && (
@@ -232,6 +242,9 @@ export default function ReviewPage() {
               index={songs.indexOf(song)}
               onRemove={removeSong}
               onUpdate={updateSong}
+              onReorder={entrySource === 'curate' ? reorderSong : undefined}
+              canMoveUp={entrySource === 'curate' && songs.indexOf(song) > 0}
+              canMoveDown={entrySource === 'curate' && songs.indexOf(song) < songs.length - 1}
             />
           ))}
           {filteredSongs.length === 0 && (
