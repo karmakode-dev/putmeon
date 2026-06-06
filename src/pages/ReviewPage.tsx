@@ -20,7 +20,9 @@ export default function ReviewPage() {
     playlistName,
     playlistDescription,
     entrySource,
+    reviewMode,
     shareUrl,
+    viewingSharedPlaylist,
     setShareUrl,
     updateSong,
     removeSong,
@@ -79,9 +81,11 @@ export default function ReviewPage() {
 
   useEffect(() => {
     if (songs.length === 0) {
-      navigate(entrySource === 'curate' ? '/curate' : '/upload', { replace: true })
+      if (reviewMode === 'curate') navigate('/curate', { replace: true })
+      else if (reviewMode === 'shared') navigate('/', { replace: true })
+      else navigate('/upload', { replace: true })
     }
-  }, [songs, navigate, entrySource])
+  }, [songs, navigate, reviewMode])
 
   useEffect(() => {
     if (!isBackendConfigured()) return
@@ -245,9 +249,9 @@ export default function ReviewPage() {
               index={songs.indexOf(song)}
               onRemove={removeSong}
               onUpdate={updateSong}
-              onReorder={entrySource === 'curate' ? reorderSong : undefined}
-              canMoveUp={entrySource === 'curate' && songs.indexOf(song) > 0}
-              canMoveDown={entrySource === 'curate' && songs.indexOf(song) < songs.length - 1}
+              onReorder={reviewMode !== 'scan' ? reorderSong : undefined}
+              canMoveUp={reviewMode !== 'scan' && songs.indexOf(song) > 0}
+              canMoveDown={reviewMode !== 'scan' && songs.indexOf(song) < songs.length - 1}
             />
           ))}
           {filteredSongs.length === 0 && (
@@ -288,7 +292,7 @@ export default function ReviewPage() {
       </div>
 
       <div className="space-y-4 animate-slide-up" style={{ animationDelay: '150ms' }}>
-        {(entrySource === 'curate' || shareUrl) && (
+        {(reviewMode === 'curate' || shareUrl) && !viewingSharedPlaylist && (
           <SharePlaylistPanel
             songs={songs}
             playlistName={playlistName}

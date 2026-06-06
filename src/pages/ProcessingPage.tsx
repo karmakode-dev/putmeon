@@ -37,7 +37,7 @@ const PROCESSING_TIMEOUT_MS = 120_000
 export default function ProcessingPage() {
   useDocumentTitle('Processing')
   const navigate = useNavigate()
-  const { uploadedFiles, imagePreviews, setSongs } = useApp()
+  const { uploadedFiles, imagePreviews, setScanSongs } = useApp()
   const [steps, setSteps] = useState<ProcessingStep[]>(buildInitialSteps)
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -90,7 +90,7 @@ export default function ProcessingPage() {
           advanceStep(3)
         }
 
-        setSongs(result.songsMatched)
+        setScanSongs(result.songsMatched)
         if (cancelled) return
 
         setSteps((prev) => prev.map((s) => ({ ...s, status: 'complete' as const })))
@@ -109,7 +109,7 @@ export default function ProcessingPage() {
     return () => {
       cancelled = true
     }
-  }, [uploadedFiles.length, navigate, setSongs])
+  }, [uploadedFiles.length, navigate, setScanSongs])
 
   const handleRetry = () => {
     setError(null)

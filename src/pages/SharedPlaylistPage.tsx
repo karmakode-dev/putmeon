@@ -11,7 +11,7 @@ import type { MatchedSong } from '../types'
 export default function SharedPlaylistPage() {
   const { publicId } = useParams<{ publicId: string }>()
   const navigate = useNavigate()
-  const { setSongs, setPlaylistName, setPlaylistDescription, setEntrySource } = useApp()
+  const { loadSharedReview } = useApp()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -35,10 +35,13 @@ export default function SharedPlaylistPage() {
           status: s.status ?? (env.useMockApi ? 'matched' : 'pending'),
           confidence: s.confidence ?? 1,
         }))
-        setSongs(songs)
-        setPlaylistName(playlist.name)
-        setPlaylistDescription(playlist.description ?? '')
-        setEntrySource('curate')
+        loadSharedReview({
+          songs,
+          playlistName: playlist.name,
+          playlistDescription: playlist.description ?? '',
+          shareUrl: `${env.appUrl}/p/${publicId}`,
+          publicId,
+        })
         navigate('/review', { replace: true })
       })
       .catch((err) => {
@@ -50,7 +53,7 @@ export default function SharedPlaylistPage() {
     return () => {
       cancelled = true
     }
-  }, [publicId, navigate, setSongs, setPlaylistName, setPlaylistDescription, setEntrySource])
+  }, [publicId, navigate, loadSharedReview])
 
   if (loading && !error) {
     return (

@@ -1,12 +1,32 @@
-import { useState } from 'react'
+import { useState, type MouseEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { useApp } from '../context/AppContext'
+import { dispatchCurateReset, resetCurateDraftToFresh } from '../utils/flowStorage'
+
+function isOnCuratePath(pathname: string) {
+  return pathname.replace(/\/$/, '').endsWith('/curate')
+}
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const location = useLocation()
+  const { clearCurateDraft } = useApp()
   const isHome = location.pathname === '/'
+  const isOnCurate = isOnCuratePath(location.pathname)
 
   const anchor = (hash: string) => (isHome ? hash : `/${hash}`)
+
+  const handleCurateClick = (e: MouseEvent) => {
+    if (isOnCurate) {
+      e.preventDefault()
+      dispatchCurateReset()
+    }
+  }
+
+  const handleUploadClick = () => {
+    resetCurateDraftToFresh()
+    clearCurateDraft()
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-bg/80 backdrop-blur-xl">
@@ -38,12 +58,14 @@ export default function Header() {
         <div className="flex items-center gap-2">
           <Link
             to="/curate"
+            onClick={handleCurateClick}
             className="hidden sm:inline-flex rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:text-white hover:bg-card transition-colors"
           >
             Curate
           </Link>
           <Link
             to="/upload"
+            onClick={handleUploadClick}
             className="rounded-lg bg-spotify px-4 py-2 text-sm font-semibold text-black hover:bg-spotify-hover transition-colors"
           >
             Upload
@@ -86,10 +108,23 @@ export default function Header() {
           </a>
           <Link
             to="/curate"
+            onClick={(e) => {
+              handleCurateClick(e)
+              setMenuOpen(false)
+            }}
             className="block rounded-lg px-3 py-2 text-sm text-muted hover:text-white hover:bg-card transition-colors"
-            onClick={() => setMenuOpen(false)}
           >
             Curate Playlist
+          </Link>
+          <Link
+            to="/upload"
+            onClick={() => {
+              handleUploadClick()
+              setMenuOpen(false)
+            }}
+            className="block rounded-lg px-3 py-2 text-sm text-muted hover:text-white hover:bg-card transition-colors"
+          >
+            Upload Screenshot
           </Link>
           <Link
             to="/privacy"

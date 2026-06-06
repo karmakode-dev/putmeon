@@ -4,13 +4,15 @@ import UploadZone from '../components/UploadZone'
 import Button from '../components/Button'
 import { useApp } from '../context/AppContext'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { useClearScanSession } from '../hooks/useFreshSession'
 
 export default function UploadPage() {
   useDocumentTitle('Upload')
+  useClearScanSession()
   const navigate = useNavigate()
-  const { uploadedFiles, imagePreviews, setUploadedFiles, setImagePreviews } = useApp()
-  const [files, setFiles] = useState<File[]>(uploadedFiles)
-  const [previews, setPreviews] = useState<string[]>(imagePreviews)
+  const { setUploadedFiles, setImagePreviews } = useApp()
+  const [files, setFiles] = useState<File[]>([])
+  const [previews, setPreviews] = useState<string[]>([])
 
   const handleFilesChange = (newFiles: File[], newPreviews: string[]) => {
     setFiles(newFiles)

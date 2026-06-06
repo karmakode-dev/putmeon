@@ -70,7 +70,7 @@ export default function SharePlaylistPanel({
       className={`rounded-2xl border border-spotify/25 bg-spotify/5 p-4 ${compact ? '' : 'space-y-3'}`}
     >
       <div>
-        <p className="text-sm font-semibold text-white">Put them on</p>
+        <p className="text-sm font-semibold text-white">Share Playlist</p>
         <p className="text-xs text-muted mt-1">
           Share your list as a link. Friends can view it and export to their own Spotify — no screenshot needed.
         </p>
@@ -84,7 +84,7 @@ export default function SharePlaylistPanel({
           disabled={songs.length === 0 || !canShare}
           onClick={handleShare}
         >
-          Put them on — get share link
+          Get Share Link
         </Button>
       ) : (
         <div className="space-y-2">

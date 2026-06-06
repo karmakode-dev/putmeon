@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '../components/Button'
 import Alert from '../components/Alert'
@@ -7,6 +7,14 @@ import SharePlaylistPanel from '../components/SharePlaylistPanel'
 import { useApp } from '../context/AppContext'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { parsePastedSongList } from '../services/pasteListParser'
+import {
+  CURATE_RESET_EVENT,
+  defaultStoredCurateDraft,
+  purgeLegacyStorage,
+  readCurateDraftFromStorage,
+  resetCurateDraftToFresh,
+  writeCurateDraftToStorage,
+} from '../utils/flowStorage'
 import { env } from '../config/env'
 import type { MatchedSong } from '../types'
 
@@ -27,29 +35,113 @@ function toMatchedSongs(parsed: { title: string; artist: string }[]): MatchedSon
   })
 }
 
+function buildManualSong(title: string, artist?: string): MatchedSong {
+  const resolvedArtist = artist?.trim() || 'Unknown Artist'
+  const id = `manual-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+  const isMock = env.useMockApi
+  return {
+    id,
+    title: title.trim(),
+    artist: resolvedArtist,
+    confidence: 1,
+    status: isMock ? 'matched' : 'pending',
+    spotifyTitle: isMock ? title.trim() : undefined,
+    spotifyArtist: isMock ? resolvedArtist : undefined,
+    spotifyTrackId: isMock ? `mock-track-${id}` : undefined,
+  }
+}
+
+function loadCuratePageState() {
+  purgeLegacyStorage()
+  const draft = readCurateDraftFromStorage()
+  return {
+    songs: draft.songs as MatchedSong[],
+    playlistName: draft.playlistName,
+    playlistDescription: draft.playlistDescription,
+    shareUrl: draft.shareUrl,
+  }
+}
+
+/** Curate reads/writes ONLY putmeon-curate-draft — never scanSession. */
 export default function CuratePage() {
   useDocumentTitle('Curate Playlist')
   const navigate = useNavigate()
-  const {
-    songs,
-    playlistName,
-    playlistDescription,
-    shareUrl,
-    setSongs,
-    setPlaylistName,
-    setPlaylistDescription,
-    setEntrySource,
-    setShareUrl,
-    addSong,
-    removeSong,
-    updateSong,
-    reorderSong,
-  } = useApp()
+  const { commitCurateDraft, clearCurateDraft } = useApp()
 
+  const [initial] = useState(loadCuratePageState)
+  const [songs, setSongs] = useState<MatchedSong[]>(initial.songs)
+  const [playlistName, setPlaylistName] = useState(initial.playlistName)
+  const [playlistDescription, setPlaylistDescription] = useState(initial.playlistDescription)
+  const [shareUrl, setShareUrl] = useState<string | null>(initial.shareUrl)
   const [pasteText, setPasteText] = useState('')
   const [newTitle, setNewTitle] = useState('')
   const [newArtist, setNewArtist] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [sharePanelKey, setSharePanelKey] = useState(0)
+
+  const resetToFreshDraft = useCallback(() => {
+    const fresh = defaultStoredCurateDraft()
+    resetCurateDraftToFresh()
+    clearCurateDraft()
+    setSongs([])
+    setPlaylistName(fresh.playlistName)
+    setPlaylistDescription(fresh.playlistDescription)
+    setShareUrl(null)
+    setPasteText('')
+    setNewTitle('')
+    setNewArtist('')
+    setError(null)
+    setSharePanelKey((k) => k + 1)
+  }, [clearCurateDraft])
+
+  useLayoutEffect(() => {
+    purgeLegacyStorage()
+    clearCurateDraft()
+    const draft = readCurateDraftFromStorage()
+    setSongs(draft.songs as MatchedSong[])
+    setPlaylistName(draft.playlistName)
+    setPlaylistDescription(draft.playlistDescription)
+    setShareUrl(draft.shareUrl)
+  }, [clearCurateDraft])
+
+  useEffect(() => {
+    const onReset = () => resetToFreshDraft()
+    window.addEventListener(CURATE_RESET_EVENT, onReset)
+    return () => window.removeEventListener(CURATE_RESET_EVENT, onReset)
+  }, [resetToFreshDraft])
+
+  useEffect(() => {
+    writeCurateDraftToStorage({
+      songs,
+      playlistName,
+      playlistDescription,
+      shareUrl,
+    })
+  }, [songs, playlistName, playlistDescription, shareUrl])
+
+  const addSong = useCallback((title: string, artist?: string) => {
+    setSongs((prev) => [...prev, buildManualSong(title, artist)])
+  }, [])
+
+  const removeSong = useCallback((id: string) => {
+    setSongs((prev) => prev.filter((s) => s.id !== id))
+  }, [])
+
+  const updateSong = useCallback((id: string, song: MatchedSong) => {
+    setSongs((prev) => prev.map((s) => (s.id === id ? song : s)))
+  }, [])
+
+  const reorderSong = useCallback((id: string, direction: 'up' | 'down') => {
+    setSongs((prev) => {
+      const index = prev.findIndex((s) => s.id === id)
+      if (index < 0) return prev
+      const target = direction === 'up' ? index - 1 : index + 1
+      if (target < 0 || target >= prev.length) return prev
+      const next = [...prev]
+      ;[next[index], next[target]] = [next[target], next[index]]
+      return next
+    })
+  }, [])
 
   const handleParsePaste = () => {
     setError(null)
@@ -72,8 +164,31 @@ export default function CuratePage() {
       return
     }
     setError(null)
-    setEntrySource('curate')
+    const draft = {
+      songs,
+      playlistName: playlistName.trim(),
+      playlistDescription,
+      shareUrl,
+    }
+    writeCurateDraftToStorage(draft)
+    commitCurateDraft(draft)
     navigate('/review')
+  }
+
+  const handleClearAll = () => {
+    setSongs([])
+    setShareUrl(null)
+    writeCurateDraftToStorage({
+      ...defaultStoredCurateDraft(),
+      playlistName,
+      playlistDescription,
+    })
+  }
+
+  const handleGoToUpload = () => {
+    resetCurateDraftToFresh()
+    clearCurateDraft()
+    navigate('/upload')
   }
 
   const hasList = songs.length > 0
@@ -173,10 +288,7 @@ export default function CuratePage() {
               <p className="text-sm font-medium">{songs.length} songs</p>
               <button
                 type="button"
-                onClick={() => {
-                  setSongs([])
-                  setShareUrl(null)
-                }}
+                onClick={handleClearAll}
                 className="text-xs text-muted hover:text-white transition-colors"
               >
                 Clear all
@@ -205,6 +317,7 @@ export default function CuratePage() {
             <p className="text-xs font-medium text-muted uppercase tracking-wider">Next steps</p>
 
             <SharePlaylistPanel
+              key={sharePanelKey}
               songs={songs}
               playlistName={playlistName}
               playlistDescription={playlistDescription}
@@ -232,9 +345,14 @@ export default function CuratePage() {
 
         {error && <Alert variant="error">{error}</Alert>}
 
-        <Button variant="secondary" size="lg" className="w-full" to="/upload">
-          Upload screenshot instead
-        </Button>
+        <div className="space-y-3 pt-2">
+          <Button variant="secondary" size="lg" className="w-full" onClick={resetToFreshDraft}>
+            Curate new list
+          </Button>
+          <Button variant="secondary" size="lg" className="w-full" onClick={handleGoToUpload}>
+            Upload screenshot instead
+          </Button>
+        </div>
       </div>
     </div>
   )
