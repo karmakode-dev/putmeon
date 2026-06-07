@@ -1,5 +1,6 @@
 import type { DetectedSong, MatchedSong, PlaylistResult, ScanResult, SharedPlaylist } from '../types'
-import { env } from '../config/env'
+import { env, sharedPlaylistUrl } from '../config/env'
+import { getAccessToken } from '../lib/supabaseClient'
 import { clearSpotifySessionId, getSpotifySessionId, setSpotifySessionId } from './spotifySession'
 
 export class ApiError extends Error {
@@ -17,6 +18,17 @@ function authHeaders(): Record<string, string> {
   return sessionId ? { 'X-Spotify-Session': sessionId } : {}
 }
 
+async function buildHeaders(options: RequestInit = {}): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {
+    ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+    ...authHeaders(),
+    ...(options.headers as Record<string, string> | undefined),
+  }
+  const token = await getAccessToken()
+  if (token) headers.Authorization = `Bearer ${token}`
+  return headers
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (!env.apiUrl) {
     throw new ApiError('API URL is not configured. Set VITE_API_URL in your environment.')
@@ -25,11 +37,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${env.apiUrl}${path}`, {
     ...options,
     credentials: 'include',
-    headers: {
-      ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
-      ...authHeaders(),
-      ...options.headers,
-    },
+    headers: await buildHeaders(options),
   })
 
   if (!response.ok) {
@@ -80,9 +88,9 @@ export async function retrySongMatch(song: MatchedSong): Promise<MatchedSong> {
   return result.song
 }
 
-export async function connectSpotify(): Promise<{ connected: boolean; username: string }> {
-  const returnUrl = `${window.location.origin}/review`
-  window.location.href = `${env.apiUrl}/auth/spotify?return_url=${encodeURIComponent(returnUrl)}`
+export async function connectSpotify(returnUrl?: string): Promise<{ connected: boolean; username: string }> {
+  const redirect = returnUrl ?? `${window.location.origin}/review`
+  window.location.href = `${env.apiUrl}/auth/spotify?return_url=${encodeURIComponent(redirect)}`
   return { connected: false, username: '' }
 }
 
@@ -131,12 +139,19 @@ export async function createSpotifyPlaylist(
 export async function saveSharedPlaylist(
   name: string,
   songs: MatchedSong[],
-  description?: string
+  description?: string,
+  curatorName?: string
 ): Promise<{ publicId: string; shareUrl: string }> {
-  return request<{ publicId: string; shareUrl: string }>('/playlists', {
+  const result = await request<{ publicId: string; shareUrl: string }>('/playlists', {
     method: 'POST',
-    body: JSON.stringify({ name, description: description?.trim() || null, songs }),
+    body: JSON.stringify({
+      name,
+      description: description?.trim() || null,
+      curatorName: curatorName?.trim() || null,
+      songs,
+    }),
   })
+  return { publicId: result.publicId, shareUrl: sharedPlaylistUrl(result.publicId) }
 }
 
 export async function fetchSharedPlaylist(publicId: string): Promise<SharedPlaylist> {

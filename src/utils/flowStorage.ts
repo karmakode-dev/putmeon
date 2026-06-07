@@ -12,6 +12,7 @@ export interface StoredFlowSession {
 
 export interface StoredCurateDraft extends StoredFlowSession {
   shareUrl: string | null
+  curatorName: string
 }
 
 const DEFAULT_PLAYLIST_NAME = 'PutMeOn Playlist'
@@ -22,6 +23,7 @@ export function defaultStoredCurateDraft(): StoredCurateDraft {
     playlistName: DEFAULT_PLAYLIST_NAME,
     playlistDescription: '',
     shareUrl: null,
+    curatorName: '',
   }
 }
 
@@ -89,6 +91,7 @@ export function readCurateDraftFromStorage(): StoredCurateDraft {
       ...defaultStoredCurateDraft(),
       ...raw,
       songs: Array.isArray(raw.songs) ? raw.songs : [],
+      curatorName: typeof raw.curatorName === 'string' ? raw.curatorName : '',
     },
     scan
   )

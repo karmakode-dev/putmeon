@@ -12,6 +12,18 @@ export function getServiceClient(): SupabaseClient {
   return client
 }
 
+export async function getAuthUserId(req: Request): Promise<string | null> {
+  const header = req.headers.get('Authorization')
+  if (!header?.startsWith('Bearer ')) return null
+  const token = header.slice(7).trim()
+  if (!token) return null
+
+  const supabase = getServiceClient()
+  const { data, error } = await supabase.auth.getUser(token)
+  if (error || !data.user) return null
+  return data.user.id
+}
+
 export async function logScan(
   imagesUploaded: number,
   songsDetected: number,

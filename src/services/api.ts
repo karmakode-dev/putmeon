@@ -22,9 +22,9 @@ export async function retrySongMatch(song: MatchedSong): Promise<MatchedSong> {
   return api.retrySongMatch(song)
 }
 
-export async function connectSpotify(): Promise<{ connected: boolean; username: string }> {
+export async function connectSpotify(returnUrl?: string): Promise<{ connected: boolean; username: string }> {
   const api = await loadApi()
-  return api.connectSpotify()
+  return api.connectSpotify(returnUrl)
 }
 
 export async function matchSongsWithSpotify(songs: DetectedSong[]): Promise<MatchedSong[]> {
@@ -44,10 +44,11 @@ export async function createSpotifyPlaylist(
 export async function saveSharedPlaylist(
   name: string,
   songs: MatchedSong[],
-  description?: string
+  description?: string,
+  curatorName?: string
 ): Promise<{ publicId: string; shareUrl: string }> {
   const api = await loadApi()
-  return api.saveSharedPlaylist(name, songs, description)
+  return api.saveSharedPlaylist(name, songs, description, curatorName)
 }
 
 export async function fetchSharedPlaylist(publicId: string): Promise<SharedPlaylist> {

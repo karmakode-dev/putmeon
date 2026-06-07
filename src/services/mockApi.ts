@@ -1,7 +1,7 @@
 import { matchSongsToSpotify } from '../data/mockSongs'
 import { detectSongsFromImages } from './songDetection'
 import type { DetectedSong, MatchedSong, PlaylistResult, ScanResult, SharedPlaylist } from '../types'
-import { env } from '../config/env'
+import { sharedPlaylistUrl } from '../config/env'
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -34,7 +34,7 @@ export async function retrySongMatch(song: MatchedSong): Promise<MatchedSong> {
   }
 }
 
-export async function connectSpotify(): Promise<{ connected: boolean; username: string }> {
+export async function connectSpotify(_returnUrl?: string): Promise<{ connected: boolean; username: string }> {
   await delay(1500)
   return { connected: true, username: 'musiclover' }
 }
@@ -42,7 +42,8 @@ export async function connectSpotify(): Promise<{ connected: boolean; username: 
 export async function saveSharedPlaylist(
   name: string,
   songs: MatchedSong[],
-  description?: string
+  description?: string,
+  curatorName?: string
 ): Promise<{ publicId: string; shareUrl: string }> {
   await delay(300)
   const publicId = `mock-${Date.now().toString(36)}`
@@ -50,9 +51,10 @@ export async function saveSharedPlaylist(
     publicId,
     name,
     description: description?.trim() || null,
+    curatorName: curatorName?.trim() || null,
     songs,
   })
-  return { publicId, shareUrl: `${env.appUrl}/p/${publicId}` }
+  return { publicId, shareUrl: sharedPlaylistUrl(publicId) }
 }
 
 export async function fetchSharedPlaylist(publicId: string): Promise<SharedPlaylist> {

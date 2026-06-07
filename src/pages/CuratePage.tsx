@@ -59,6 +59,7 @@ function loadCuratePageState() {
     playlistName: draft.playlistName,
     playlistDescription: draft.playlistDescription,
     shareUrl: draft.shareUrl,
+    curatorName: draft.curatorName ?? '',
   }
 }
 
@@ -72,6 +73,7 @@ export default function CuratePage() {
   const [songs, setSongs] = useState<MatchedSong[]>(initial.songs)
   const [playlistName, setPlaylistName] = useState(initial.playlistName)
   const [playlistDescription, setPlaylistDescription] = useState(initial.playlistDescription)
+  const [curatorName, setCuratorName] = useState(initial.curatorName)
   const [shareUrl, setShareUrl] = useState<string | null>(initial.shareUrl)
   const [pasteText, setPasteText] = useState('')
   const [newTitle, setNewTitle] = useState('')
@@ -86,6 +88,7 @@ export default function CuratePage() {
     setSongs([])
     setPlaylistName(fresh.playlistName)
     setPlaylistDescription(fresh.playlistDescription)
+    setCuratorName(fresh.curatorName)
     setShareUrl(null)
     setPasteText('')
     setNewTitle('')
@@ -101,6 +104,7 @@ export default function CuratePage() {
     setSongs(draft.songs as MatchedSong[])
     setPlaylistName(draft.playlistName)
     setPlaylistDescription(draft.playlistDescription)
+    setCuratorName(draft.curatorName ?? '')
     setShareUrl(draft.shareUrl)
   }, [clearCurateDraft])
 
@@ -116,8 +120,9 @@ export default function CuratePage() {
       playlistName,
       playlistDescription,
       shareUrl,
+      curatorName,
     })
-  }, [songs, playlistName, playlistDescription, shareUrl])
+  }, [songs, playlistName, playlistDescription, shareUrl, curatorName])
 
   const addSong = useCallback((title: string, artist?: string) => {
     setSongs((prev) => [...prev, buildManualSong(title, artist)])
@@ -169,6 +174,7 @@ export default function CuratePage() {
       playlistName: playlistName.trim(),
       playlistDescription,
       shareUrl,
+      curatorName,
     }
     writeCurateDraftToStorage(draft)
     commitCurateDraft(draft)
@@ -231,6 +237,21 @@ export default function CuratePage() {
               placeholder="A short note about this playlist"
               className="w-full rounded-xl border border-border bg-bg px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-spotify/50"
             />
+          </div>
+          <div>
+            <label htmlFor="curate-curator" className="block text-sm font-medium mb-2">
+              Curator name <span className="text-muted font-normal">(optional)</span>
+            </label>
+            <input
+              id="curate-curator"
+              type="text"
+              value={curatorName}
+              onChange={(e) => setCuratorName(e.target.value)}
+              maxLength={80}
+              placeholder="Your name or handle"
+              className="w-full rounded-xl border border-border bg-bg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-spotify/50"
+            />
+            <p className="text-xs text-muted mt-1.5">Shown on the shared page as &ldquo;Curated by … on PMO&rdquo;</p>
           </div>
         </div>
 
@@ -321,6 +342,7 @@ export default function CuratePage() {
               songs={songs}
               playlistName={playlistName}
               playlistDescription={playlistDescription}
+              curatorName={curatorName}
               shareUrl={shareUrl}
               onShareUrl={setShareUrl}
             />

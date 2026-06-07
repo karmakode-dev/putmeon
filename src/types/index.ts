@@ -39,6 +39,7 @@ export interface SharedPlaylist {
   publicId: string
   name: string
   description: string | null
+  curatorName: string | null
   songs: MatchedSong[]
 }
 

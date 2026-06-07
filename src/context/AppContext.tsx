@@ -26,11 +26,13 @@ interface FlowSession {
 
 interface CurateDraft extends FlowSession {
   shareUrl: string | null
+  curatorName: string
 }
 
 interface SharedReview extends FlowSession {
   shareUrl: string
   publicId: string
+  curatorName: string | null
 }
 
 interface AppMeta {
@@ -62,6 +64,7 @@ const defaultCurateDraft = (): CurateDraft => ({
   playlistName: 'PutMeOn Playlist',
   playlistDescription: '',
   shareUrl: null,
+  curatorName: '',
 })
 
 const defaultPersisted = (): { scan: FlowSession; curate: CurateDraft; meta: AppMeta } => ({
@@ -93,13 +96,13 @@ function migrateLegacy(parsed: Record<string, unknown>): { scan: FlowSession; cu
     reviewMode === 'curate' && entrySource === 'curate' && legacySongs.length > 0 && !viewingSharedPlaylist
 
   if (viewingSharedPlaylist && legacySongs.length > 0 && shareUrl) {
-    base.curate = { songs: legacySongs, playlistName, playlistDescription, shareUrl }
+    base.curate = { songs: legacySongs, playlistName, playlistDescription, shareUrl, curatorName: '' }
     base.meta.reviewMode = 'shared'
     base.meta.viewingSharedPlaylist = true
     const publicId = shareUrl.split('/p/').pop() ?? ''
-    base.meta.shared = { songs: legacySongs, playlistName, playlistDescription, shareUrl, publicId }
+    base.meta.shared = { songs: legacySongs, playlistName, playlistDescription, shareUrl, publicId, curatorName: null }
   } else if (isExplicitCurateExport) {
-    base.curate = { songs: legacySongs, playlistName, playlistDescription, shareUrl }
+    base.curate = { songs: legacySongs, playlistName, playlistDescription, shareUrl, curatorName: '' }
     base.meta.reviewMode = 'curate'
   } else if (legacySongs.length > 0) {
     base.scan = { songs: legacySongs, playlistName, playlistDescription }
@@ -129,6 +132,7 @@ function loadPersisted(): { scan: FlowSession; curate: CurateDraft; meta: AppMet
     playlistName: curateStored.playlistName,
     playlistDescription: curateStored.playlistDescription,
     shareUrl: curateStored.shareUrl,
+    curatorName: curateStored.curatorName ?? '',
   }
 
   const metaRaw = readJsonLocal<AppMeta>(META_STORAGE_KEY)
@@ -158,6 +162,7 @@ function loadPersisted(): { scan: FlowSession; curate: CurateDraft; meta: AppMet
       playlistName: curate.playlistName,
       playlistDescription: curate.playlistDescription,
       shareUrl: curate.shareUrl,
+      curatorName: curate.curatorName,
     },
     { songs: scan.songs, playlistName: scan.playlistName, playlistDescription: scan.playlistDescription }
   )
@@ -169,6 +174,7 @@ function loadPersisted(): { scan: FlowSession; curate: CurateDraft; meta: AppMet
       playlistName: sanitizedCurate.playlistName,
       playlistDescription: sanitizedCurate.playlistDescription,
       shareUrl: sanitizedCurate.shareUrl,
+      curatorName: sanitizedCurate.curatorName ?? '',
     },
     meta,
   }
@@ -193,6 +199,7 @@ function savePersisted(scan: FlowSession, curate: CurateDraft, meta: AppMeta) {
       playlistName: curate.playlistName,
       playlistDescription: curate.playlistDescription,
       shareUrl: curate.shareUrl,
+      curatorName: curate.curatorName,
     },
     { songs: scan.songs, playlistName: scan.playlistName, playlistDescription: scan.playlistDescription }
   )
@@ -228,6 +235,9 @@ interface AppState {
   curatePlaylistName: string
   curatePlaylistDescription: string
   curateShareUrl: string | null
+  curateCuratorName: string
+  curatorName: string | null
+  sharedPublicId: string | null
   setUploadedFiles: (files: File[]) => void
   setImagePreviews: (previews: string[]) => void
   setReviewMode: (mode: ReviewMode) => void
@@ -249,6 +259,7 @@ interface AppState {
   setCuratePlaylistName: (name: string) => void
   setCuratePlaylistDescription: (description: string) => void
   setCurateShareUrl: (url: string | null) => void
+  setCurateCuratorName: (name: string) => void
   loadSharedReview: (review: SharedReview) => void
   commitCurateDraft: (draft: CurateDraft) => void
   clearCurateDraft: () => void
@@ -316,6 +327,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       : reviewMode === 'curate'
         ? curateDraft.shareUrl
         : null
+
+  const curatorName =
+    reviewMode === 'shared'
+      ? (sharedReview?.curatorName ?? null)
+      : reviewMode === 'curate'
+        ? curateDraft.curatorName.trim() || null
+        : null
+
+  const sharedPublicId = reviewMode === 'shared' ? (sharedReview?.publicId ?? null) : null
 
   useEffect(() => {
     savePersisted(scanSession, curateDraft, {
@@ -488,6 +508,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     patchCurateDraft({ shareUrl: url })
   }, [patchCurateDraft])
 
+  const setCurateCuratorName = useCallback((name: string) => {
+    patchCurateDraft({ curatorName: name })
+  }, [patchCurateDraft])
+
   const loadSharedReview = useCallback((review: SharedReview) => {
     setSharedReviewState(review)
     setReviewModeState('shared')
@@ -539,10 +563,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       playlistName,
       playlistDescription,
       shareUrl,
+      curatorName,
+      sharedPublicId,
       curateSongs: curateDraft.songs,
       curatePlaylistName: curateDraft.playlistName,
       curatePlaylistDescription: curateDraft.playlistDescription,
       curateShareUrl: curateDraft.shareUrl,
+      curateCuratorName: curateDraft.curatorName,
       setUploadedFiles,
       setImagePreviews,
       setReviewMode,
@@ -564,6 +591,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCuratePlaylistName,
       setCuratePlaylistDescription,
       setCurateShareUrl,
+      setCurateCuratorName,
       loadSharedReview,
       commitCurateDraft,
       clearCurateDraft,
@@ -586,6 +614,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       playlistName,
       playlistDescription,
       shareUrl,
+      curatorName,
+      sharedPublicId,
       curateDraft,
       setUploadedFiles,
       setImagePreviews,
@@ -608,6 +638,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCuratePlaylistName,
       setCuratePlaylistDescription,
       setCurateShareUrl,
+      setCurateCuratorName,
       loadSharedReview,
       commitCurateDraft,
       clearCurateDraft,

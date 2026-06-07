@@ -22,7 +22,8 @@ export default function ReviewPage() {
     entrySource,
     reviewMode,
     shareUrl,
-    viewingSharedPlaylist,
+    curatorName,
+    sharedPublicId,
     setShareUrl,
     updateSong,
     removeSong,
@@ -80,9 +81,15 @@ export default function ReviewPage() {
   }
 
   useEffect(() => {
+    if (reviewMode === 'shared' && sharedPublicId) {
+      navigate(`/p/${sharedPublicId}`, { replace: true })
+    }
+  }, [reviewMode, sharedPublicId, navigate])
+
+  useEffect(() => {
+    if (reviewMode === 'shared') return
     if (songs.length === 0) {
       if (reviewMode === 'curate') navigate('/curate', { replace: true })
-      else if (reviewMode === 'shared') navigate('/', { replace: true })
       else navigate('/upload', { replace: true })
     }
   }, [songs, navigate, reviewMode])
@@ -146,22 +153,32 @@ export default function ReviewPage() {
     }
   }
 
+  if (reviewMode === 'shared') {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-24 text-center">
+        <p className="text-muted animate-pulse">Loading playlist…</p>
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
       <div className="mb-8 animate-slide-up">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">
-          {awaitingMatch ? 'Review Songs' : 'Review Matches'}
-        </h1>
-        <p className="text-muted text-sm">
-          {awaitingMatch
-            ? entrySource === 'curate'
-              ? `${songs.length} songs in your list — edit if needed, then connect Spotify`
-              : `${songs.length} songs detected — edit if needed, then connect Spotify`
-            : `${playableCount} / ${songs.length} songs matched on Spotify`}
-        </p>
-        {playlistDescription.trim() && (
-          <p className="text-sm text-muted/80 mt-2 max-w-xl">{playlistDescription}</p>
-        )}
+        <>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">
+            {awaitingMatch ? 'Review Songs' : 'Review Matches'}
+          </h1>
+          <p className="text-muted text-sm">
+            {awaitingMatch
+              ? entrySource === 'curate'
+                ? `${songs.length} songs in your list — edit if needed, then connect Spotify`
+                : `${songs.length} songs detected — edit if needed, then connect Spotify`
+              : `${playableCount} / ${songs.length} songs matched on Spotify`}
+          </p>
+          {playlistDescription.trim() && (
+            <p className="text-sm text-muted/80 mt-2 max-w-xl">{playlistDescription}</p>
+          )}
+        </>
       </div>
 
       {env.useMockApi && (
@@ -292,11 +309,12 @@ export default function ReviewPage() {
       </div>
 
       <div className="space-y-4 animate-slide-up" style={{ animationDelay: '150ms' }}>
-        {(reviewMode === 'curate' || shareUrl) && !viewingSharedPlaylist && (
+        {(reviewMode === 'curate' || shareUrl) && (
           <SharePlaylistPanel
             songs={songs}
             playlistName={playlistName}
             playlistDescription={playlistDescription}
+            curatorName={curatorName ?? ''}
             shareUrl={shareUrl}
             onShareUrl={setShareUrl}
             compact
@@ -305,6 +323,7 @@ export default function ReviewPage() {
 
         <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
           <p className="text-xs font-medium text-muted uppercase tracking-wider">Export to Spotify</p>
+
         <div>
           <label htmlFor="playlist-name" className="block text-sm font-medium mb-2">
             Playlist name

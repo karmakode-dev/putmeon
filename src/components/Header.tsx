@@ -2,6 +2,9 @@ import { useState, type MouseEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { dispatchCurateReset, resetCurateDraftToFresh } from '../utils/flowStorage'
+import UserMenu from './UserMenu'
+import GoogleSignInButton from './GoogleSignInButton'
+import { useAuth } from '../context/AuthContext'
 
 function isOnCuratePath(pathname: string) {
   return pathname.replace(/\/$/, '').endsWith('/curate')
@@ -11,6 +14,7 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const location = useLocation()
   const { clearCurateDraft } = useApp()
+  const { user, loading: authLoading } = useAuth()
   const isHome = location.pathname === '/'
   const isOnCurate = isOnCuratePath(location.pathname)
 
@@ -56,6 +60,7 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <UserMenu />
           <Link
             to="/curate"
             onClick={handleCurateClick}
@@ -140,6 +145,11 @@ export default function Header() {
           >
             Contact
           </Link>
+          {!authLoading && !user && (
+            <div className="pt-2 sm:hidden">
+              <GoogleSignInButton className="w-full" returnPath={location.pathname} />
+            </div>
+          )}
         </nav>
       )}
     </header>

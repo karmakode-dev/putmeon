@@ -7,7 +7,7 @@ import {
 } from '../_shared/cors.ts'
 import { detectSongsFromImages, filesToImages, type DetectedSong } from '../_shared/openai.ts'
 import { countMatched, matchSong, matchSongs, type MatchedSong } from '../_shared/match.ts'
-import { logScan, getServiceClient } from '../_shared/supabase.ts'
+import { logScan, getServiceClient, getAuthUserId } from '../_shared/supabase.ts'
 import {
   createUserPlaylist,
   exchangeAuthCode,
@@ -221,22 +221,38 @@ async function handleSpotifyMe(req: Request): Promise<Response> {
 }
 
 async function handleSaveSharedPlaylist(req: Request): Promise<Response> {
+  const userId = await getAuthUserId(req)
+  if (!userId) return errorResponse('Sign in to share a playlist.', req, 401)
+
   const body = await req.json()
   const name = (body.name as string | undefined)?.trim()
   const description = (body.description as string | undefined)?.trim() || null
+  const curatorName = (body.curatorName as string | undefined)?.trim() || null
   const songs = body.songs
 
   if (!name || !Array.isArray(songs) || songs.length === 0) {
     return errorResponse('Invalid playlist payload.', req)
   }
 
-  const publicId = generatePublicId()
   const supabase = getServiceClient()
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (profileError || !profile?.username) {
+    return errorResponse('Choose a username before sharing playlists.', req, 403)
+  }
+
+  const publicId = generatePublicId()
   const { error } = await supabase.from('shared_playlists').insert({
     public_id: publicId,
     name,
     description,
+    curator_name: curatorName,
     songs,
+    owner_id: userId,
   })
 
   if (error) {
@@ -256,7 +272,7 @@ async function handleGetSharedPlaylist(req: Request, publicId: string): Promise<
   const supabase = getServiceClient()
   const { data, error } = await supabase
     .from('shared_playlists')
-    .select('public_id, name, description, songs')
+    .select('public_id, name, description, curator_name, songs')
     .eq('public_id', publicId)
     .maybeSingle()
 
@@ -267,6 +283,7 @@ async function handleGetSharedPlaylist(req: Request, publicId: string): Promise<
       publicId: data.public_id,
       name: data.name,
       description: data.description,
+      curatorName: data.curator_name ?? null,
       songs: data.songs,
     },
     req

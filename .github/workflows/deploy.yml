@@ -31,6 +31,8 @@ jobs:
           VITE_USE_MOCK_API: false
           VITE_API_URL: https://ezfnycxrvhclxrdbzrxg.supabase.co/functions/v1/api
           VITE_APP_URL: https://putmeon.karmakode.co
+          VITE_SUPABASE_URL: https://ezfnycxrvhclxrdbzrxg.supabase.co
+          VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Zm55Y3hydmhjbHhyZGJ6cnhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNDQ3NjAsImV4cCI6MjA5NTgyMDc2MH0.MNc8mjXxpZILC3UTAFNoMv2-qs6TfpiIMMPt0zkQOWo
 
       - name: SPA fallback for client-side routing
         run: cp dist/index.html dist/404.html

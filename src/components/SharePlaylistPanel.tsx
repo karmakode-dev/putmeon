@@ -1,14 +1,17 @@
 import { useState } from 'react'
 import Button from './Button'
 import Alert from './Alert'
+import GoogleSignInButton from './GoogleSignInButton'
 import { saveSharedPlaylist } from '../services/api'
 import { isBackendConfigured, env } from '../config/env'
+import { useAuth } from '../context/AuthContext'
 import type { MatchedSong } from '../types'
 
 interface SharePlaylistPanelProps {
   songs: MatchedSong[]
   playlistName: string
   playlistDescription?: string
+  curatorName?: string
   shareUrl?: string | null
   onShareUrl?: (url: string) => void
   compact?: boolean
@@ -18,16 +21,20 @@ export default function SharePlaylistPanel({
   songs,
   playlistName,
   playlistDescription = '',
+  curatorName = '',
   shareUrl: externalShareUrl,
   onShareUrl,
   compact = false,
 }: SharePlaylistPanelProps) {
+  const { isAuthenticated, needsUsername } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [localShareUrl, setLocalShareUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
   const shareUrl = externalShareUrl ?? localShareUrl
+  const canShare = env.useMockApi || isBackendConfigured()
+  const requiresAccount = isBackendConfigured()
 
   const handleShare = async () => {
     if (!playlistName.trim()) {
@@ -42,7 +49,12 @@ export default function SharePlaylistPanel({
     setLoading(true)
     setError(null)
     try {
-      const result = await saveSharedPlaylist(playlistName.trim(), songs, playlistDescription)
+      const result = await saveSharedPlaylist(
+        playlistName.trim(),
+        songs,
+        playlistDescription,
+        curatorName.trim() || undefined
+      )
       setLocalShareUrl(result.shareUrl)
       onShareUrl?.(result.shareUrl)
     } catch (err) {
@@ -63,8 +75,6 @@ export default function SharePlaylistPanel({
     }
   }
 
-  const canShare = env.useMockApi || isBackendConfigured()
-
   return (
     <div
       className={`rounded-2xl border border-spotify/25 bg-spotify/5 p-4 ${compact ? '' : 'space-y-3'}`}
@@ -76,39 +86,59 @@ export default function SharePlaylistPanel({
         </p>
       </div>
 
-      {!shareUrl ? (
-        <Button
-          size={compact ? 'md' : 'lg'}
-          className="w-full"
-          loading={loading}
-          disabled={songs.length === 0 || !canShare}
-          onClick={handleShare}
-        >
-          Get Share Link
-        </Button>
-      ) : (
-        <div className="space-y-2">
-          <p className="text-xs text-spotify font-medium">Your list is live</p>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              readOnly
-              value={shareUrl}
-              aria-label="Shareable playlist link"
-              className="flex-1 rounded-xl border border-border bg-bg px-3 py-2 text-xs truncate"
-            />
-            <Button variant="secondary" size="sm" onClick={handleCopy}>
-              {copied ? 'Copied!' : 'Copy link'}
-            </Button>
-          </div>
-          <a
-            href={shareUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block text-xs text-spotify hover:text-spotify-hover"
-          >
-            Open shared page →
-          </a>
+      {requiresAccount && !isAuthenticated && (
+        <div className="space-y-3">
+          <p className="text-xs text-muted">Sign in to create a share link. Your playlists are saved to your account.</p>
+          <GoogleSignInButton className="w-full" size={compact ? 'md' : 'lg'} />
         </div>
+      )}
+
+      {requiresAccount && isAuthenticated && needsUsername && (
+        <div className="space-y-3">
+          <p className="text-xs text-muted">Choose a username before sharing your first playlist.</p>
+          <Button to="/onboarding" size={compact ? 'md' : 'lg'} className="w-full">
+            Choose username
+          </Button>
+        </div>
+      )}
+
+      {(!requiresAccount || (isAuthenticated && !needsUsername)) && (
+        <>
+          {!shareUrl ? (
+            <Button
+              size={compact ? 'md' : 'lg'}
+              className="w-full"
+              loading={loading}
+              disabled={songs.length === 0 || !canShare}
+              onClick={handleShare}
+            >
+              Get Share Link
+            </Button>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-spotify font-medium">Your list is live</p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  readOnly
+                  value={shareUrl}
+                  aria-label="Shareable playlist link"
+                  className="flex-1 rounded-xl border border-border bg-bg px-3 py-2 text-xs truncate"
+                />
+                <Button variant="secondary" size="sm" onClick={handleCopy}>
+                  {copied ? 'Copied!' : 'Copy link'}
+                </Button>
+              </div>
+              <a
+                href={shareUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block text-xs text-spotify hover:text-spotify-hover"
+              >
+                Open shared page →
+              </a>
+            </div>
+          )}
+        </>
       )}
 
       {!canShare && (

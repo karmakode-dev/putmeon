@@ -5,17 +5,24 @@ import { connectSpotify } from '../services/api'
 interface SpotifyConnectButtonProps {
   connected: boolean
   username: string | null
+  returnUrl?: string
   onConnect: (username: string) => void
   onError?: (message: string) => void
 }
 
-export default function SpotifyConnectButton({ connected, username, onConnect, onError }: SpotifyConnectButtonProps) {
+export default function SpotifyConnectButton({
+  connected,
+  username,
+  returnUrl,
+  onConnect,
+  onError,
+}: SpotifyConnectButtonProps) {
   const [loading, setLoading] = useState(false)
 
   const handleConnect = async () => {
     setLoading(true)
     try {
-      const result = await connectSpotify()
+      const result = await connectSpotify(returnUrl)
       if (result.connected) onConnect(result.username)
     } catch (err) {
       onError?.(err instanceof Error ? err.message : 'Failed to connect Spotify')
