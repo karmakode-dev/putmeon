@@ -314,8 +314,8 @@ async function recordPlaylistExport(
   if (!row) return null
 
   return {
-    exportCount: row.export_count as number,
-    recorded: row.recorded as boolean,
+    exportCount: row.new_export_count as number,
+    recorded: row.was_recorded as boolean,
   }
 }
 
