@@ -118,15 +118,23 @@ export function saveSpotifySessionFromCallback(sessionId: string): void {
 export async function createSpotifyPlaylist(
   songs: MatchedSong[],
   name = 'PutMeOn Playlist',
-  description?: string
+  description?: string,
+  publicId?: string
 ): Promise<PlaylistResult> {
   if (!getSpotifySessionId()) {
     throw new ApiError('Connect Spotify before creating a playlist.')
   }
   const result = await request<PlaylistResult>('/playlist', {
     method: 'POST',
-    body: JSON.stringify({ songs, name }),
+    body: JSON.stringify({
+      songs,
+      name,
+      platform: 'spotify',
+      ...(publicId ? { publicId } : {}),
+    }),
   })
+
+  if (publicId) return result
 
   try {
     const share = await saveSharedPlaylist(name, songs, description)

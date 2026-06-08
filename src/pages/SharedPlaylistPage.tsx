@@ -11,10 +11,11 @@ import type { MatchedSong } from '../types'
 
 export default function SharedPlaylistPage() {
   const { publicId } = useParams<{ publicId: string }>()
-  const { loadSharedReview, reviewMode, sharedPublicId, songs } = useApp()
+  const { loadSharedReview } = useApp()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [ready, setReady] = useState(false)
+  const [exportCount, setExportCount] = useState(0)
 
   useDocumentTitle('Shared Playlist')
 
@@ -25,18 +26,10 @@ export default function SharedPlaylistPage() {
       return
     }
 
-    const alreadyLoaded =
-      reviewMode === 'shared' && sharedPublicId === publicId && songs.length > 0
-
-    if (alreadyLoaded) {
-      setReady(true)
-      setLoading(false)
-      return
-    }
-
     let cancelled = false
     setLoading(true)
     setReady(false)
+    setError(null)
 
     fetchSharedPlaylist(publicId)
       .then((playlist) => {
@@ -55,6 +48,7 @@ export default function SharedPlaylistPage() {
           shareUrl: sharedPlaylistUrl(publicId),
           publicId,
         })
+        setExportCount(playlist.exportCount ?? 0)
         setReady(true)
         setLoading(false)
       })
@@ -67,7 +61,7 @@ export default function SharedPlaylistPage() {
     return () => {
       cancelled = true
     }
-  }, [publicId, loadSharedReview, reviewMode, sharedPublicId, songs.length])
+  }, [publicId, loadSharedReview])
 
   if (loading && !error) {
     return (
@@ -91,5 +85,5 @@ export default function SharedPlaylistPage() {
     )
   }
 
-  return <SharedPlaylistView publicId={publicId} />
+  return <SharedPlaylistView publicId={publicId} initialExportCount={exportCount} />
 }

@@ -8,13 +8,14 @@ import { useApp } from '../context/AppContext'
 import { createSpotifyPlaylist, matchSongsWithSpotify } from '../services/api'
 import { saveSpotifySessionFromCallback, verifySpotifySession } from '../services/apiClient'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
-import { isBackendConfigured } from '../config/env'
+import { formatSharedPlaylistMeta, isBackendConfigured } from '../config/env'
 
 interface SharedPlaylistViewProps {
   publicId: string
+  initialExportCount?: number
 }
 
-export default function SharedPlaylistView({ publicId }: SharedPlaylistViewProps) {
+export default function SharedPlaylistView({ publicId, initialExportCount = 0 }: SharedPlaylistViewProps) {
   const navigate = useNavigate()
   const {
     songs,
@@ -39,6 +40,7 @@ export default function SharedPlaylistView({ publicId }: SharedPlaylistViewProps
 
   const [creating, setCreating] = useState(false)
   const [matching, setMatching] = useState(false)
+  const [exportCount, setExportCount] = useState(initialExportCount)
   const lastAutoRematchKey = useRef('')
   const [error, setError] = useState<string | null>(() => {
     if (!isBackendConfigured()) return null
@@ -51,6 +53,10 @@ export default function SharedPlaylistView({ publicId }: SharedPlaylistViewProps
     }
     return decoded
   })
+
+  useEffect(() => {
+    setExportCount(initialExportCount)
+  }, [initialExportCount, publicId])
 
   const runRematch = useCallback(async () => {
     if (songs.length === 0) return
@@ -107,7 +113,8 @@ export default function SharedPlaylistView({ publicId }: SharedPlaylistViewProps
     setCreating(true)
     setError(null)
     try {
-      const result = await createSpotifyPlaylist(songs, playlistName, playlistDescription)
+      const result = await createSpotifyPlaylist(songs, playlistName, playlistDescription, publicId)
+      if (result.exportCount != null) setExportCount(result.exportCount)
       setPlaylistResult(shareUrl ? { ...result, shareUrl } : result)
       navigate('/success', { replace: true })
     } catch (err) {
@@ -127,7 +134,7 @@ export default function SharedPlaylistView({ publicId }: SharedPlaylistViewProps
         {playlistDescription.trim() && (
           <p className="text-sm text-muted max-w-xl">{playlistDescription}</p>
         )}
-        <p className="text-muted text-sm mt-2">{songs.length} songs</p>
+        <p className="text-muted text-sm mt-2">{formatSharedPlaylistMeta(songs.length, exportCount)}</p>
       </div>
 
       {!spotifyConnected && (

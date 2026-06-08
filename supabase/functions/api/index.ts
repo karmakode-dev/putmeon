@@ -272,7 +272,7 @@ async function handleGetSharedPlaylist(req: Request, publicId: string): Promise<
   const supabase = getServiceClient()
   const { data, error } = await supabase
     .from('shared_playlists')
-    .select('public_id, name, description, curator_name, songs')
+    .select('public_id, name, description, curator_name, songs, export_count')
     .eq('public_id', publicId)
     .maybeSingle()
 
@@ -285,9 +285,38 @@ async function handleGetSharedPlaylist(req: Request, publicId: string): Promise<
       description: data.description,
       curatorName: data.curator_name ?? null,
       songs: data.songs,
+      exportCount: data.export_count ?? 0,
     },
     req
   )
+}
+
+async function recordPlaylistExport(
+  publicId: string,
+  pmoUserId: string | null,
+  spotifyUserId: string,
+  platform = 'spotify'
+): Promise<{ exportCount: number; recorded: boolean } | null> {
+  const supabase = getServiceClient()
+  const { data, error } = await supabase.rpc('record_playlist_export', {
+    p_public_id: publicId,
+    p_user_id: pmoUserId,
+    p_spotify_user_id: spotifyUserId,
+    p_platform: platform,
+  })
+
+  if (error) {
+    console.error('record_playlist_export error:', error)
+    return null
+  }
+
+  const row = Array.isArray(data) ? data[0] : data
+  if (!row) return null
+
+  return {
+    exportCount: row.export_count as number,
+    recorded: row.recorded as boolean,
+  }
 }
 
 async function handleCreatePlaylist(req: Request): Promise<Response> {
@@ -297,6 +326,8 @@ async function handleCreatePlaylist(req: Request): Promise<Response> {
   const body = await req.json()
   const songs = body.songs as MatchedSong[] | undefined
   const name = (body.name as string | undefined)?.trim() || 'PutMeOn Playlist'
+  const publicId = (body.publicId as string | undefined)?.trim() || null
+  const platform = (body.platform as string | undefined)?.trim() || 'spotify'
 
   if (!Array.isArray(songs) || songs.length === 0) {
     return errorResponse('No songs provided.', req)
@@ -312,7 +343,17 @@ async function handleCreatePlaylist(req: Request): Promise<Response> {
 
   const { token, session } = await getUserAccessToken(sessionId)
   const result = await createUserPlaylist(token, session.spotify_user_id, name, trackIds)
-  return jsonResponse(result, req)
+
+  let exportTracking: { exportCount: number; recorded: boolean } | null = null
+  if (publicId) {
+    const pmoUserId = await getAuthUserId(req)
+    exportTracking = await recordPlaylistExport(publicId, pmoUserId, session.spotify_user_id, platform)
+  }
+
+  return jsonResponse(
+    exportTracking ? { ...result, exportCount: exportTracking.exportCount, exportRecorded: exportTracking.recorded } : result,
+    req
+  )
 }
 
 Deno.serve(async (req) => {

@@ -9,7 +9,7 @@ import { useApp } from '../context/AppContext'
 import { createSpotifyPlaylist, matchSongsWithSpotify } from '../services/api'
 import { saveSpotifySessionFromCallback, verifySpotifySession, clearSpotifySessionId } from '../services/apiClient'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
-import { env, isBackendConfigured, isOpenAiConfigured } from '../config/env'
+import { env, isBackendConfigured, isOpenAiConfigured, publicIdFromShareUrl } from '../config/env'
 
 export default function ReviewPage() {
   const navigate = useNavigate()
@@ -143,7 +143,8 @@ export default function ReviewPage() {
     setCreating(true)
     setError(null)
     try {
-      const result = await createSpotifyPlaylist(songs, playlistName, playlistDescription)
+      const sharedPlaylistId = publicIdFromShareUrl(shareUrl)
+      const result = await createSpotifyPlaylist(songs, playlistName, playlistDescription, sharedPlaylistId)
       setPlaylistResult(shareUrl ? { ...result, shareUrl } : result)
       navigate('/success', { replace: true })
     } catch (err) {

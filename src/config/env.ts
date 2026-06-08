@@ -18,6 +18,25 @@ export function sharedPlaylistUrl(publicId: string): string {
   return `${base}/p/${publicId}`
 }
 
+/** Extract public id from a share URL (`/p/{id}`). */
+export function publicIdFromShareUrl(url: string | null | undefined): string | undefined {
+  if (!url) return undefined
+  const match = url.match(/\/p\/([^/?#]+)/)
+  return match?.[1]
+}
+
+export function formatExportCount(count: number): string {
+  if (count === 1) return '1 person put on'
+  return `${count} people put on`
+}
+
+/** Shared playlist subtitle: song count plus optional export count. */
+export function formatSharedPlaylistMeta(songCount: number, exportCount: number): string {
+  const songs = `${songCount} song${songCount === 1 ? '' : 's'}`
+  if (exportCount <= 0) return songs
+  return `${songs} · ${formatExportCount(exportCount)}`
+}
+
 export function isBackendConfigured(): boolean {
   return !env.useMockApi && Boolean(env.apiUrl)
 }

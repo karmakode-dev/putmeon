@@ -35,10 +35,11 @@ export async function matchSongsWithSpotify(songs: DetectedSong[]): Promise<Matc
 export async function createSpotifyPlaylist(
   songs: MatchedSong[],
   name?: string,
-  description?: string
+  description?: string,
+  publicId?: string
 ): Promise<PlaylistResult> {
   const api = await loadApi()
-  return api.createSpotifyPlaylist(songs, name, description)
+  return api.createSpotifyPlaylist(songs, name, description, publicId)
 }
 
 export async function saveSharedPlaylist(

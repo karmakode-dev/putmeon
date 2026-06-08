@@ -6,6 +6,23 @@ import { sharedPlaylistUrl } from '../config/env'
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const mockSharedPlaylists = new Map<string, SharedPlaylist>()
+const mockExportKeys = new Map<string, Set<string>>()
+
+function mockRecordExport(publicId: string, exporterKey: string): { exportCount: number; recorded: boolean } {
+  const playlist = mockSharedPlaylists.get(publicId)
+  if (!playlist) return { exportCount: 0, recorded: false }
+
+  const keys = mockExportKeys.get(publicId) ?? new Set<string>()
+  if (keys.has(exporterKey)) {
+    return { exportCount: playlist.exportCount, recorded: false }
+  }
+
+  keys.add(exporterKey)
+  mockExportKeys.set(publicId, keys)
+  const exportCount = playlist.exportCount + 1
+  mockSharedPlaylists.set(publicId, { ...playlist, exportCount })
+  return { exportCount, recorded: true }
+}
 
 export async function detectSongsFromImagesForScan(files: File[]): Promise<DetectedSong[]> {
   const { songs } = await detectSongsFromImages(files)
@@ -53,6 +70,7 @@ export async function saveSharedPlaylist(
     description: description?.trim() || null,
     curatorName: curatorName?.trim() || null,
     songs,
+    exportCount: 0,
   })
   return { publicId, shareUrl: sharedPlaylistUrl(publicId) }
 }
@@ -61,17 +79,19 @@ export async function fetchSharedPlaylist(publicId: string): Promise<SharedPlayl
   await delay(400)
   const playlist = mockSharedPlaylists.get(publicId)
   if (!playlist) throw new Error('Playlist not found.')
-  return playlist
+  return { ...playlist, exportCount: playlist.exportCount ?? 0 }
 }
 
 export async function createSpotifyPlaylist(
   songs: MatchedSong[],
   name = 'PutMeOn Playlist',
-  description?: string
+  description?: string,
+  publicId?: string
 ): Promise<PlaylistResult> {
   await delay(2000)
   const matchedTracks = songs.filter((s) => s.status === 'matched' || s.status === 'possible')
   const share = await saveSharedPlaylist(name, songs, description)
+  const tracking = publicId ? mockRecordExport(publicId, 'mock-exporter') : null
   return {
     id: `mock-playlist-${Date.now()}`,
     name,
@@ -79,5 +99,8 @@ export async function createSpotifyPlaylist(
     trackCount: matchedTracks.length,
     shareId: share.publicId,
     shareUrl: share.shareUrl,
+    ...(tracking
+      ? { exportCount: tracking.exportCount, exportRecorded: tracking.recorded }
+      : {}),
   }
 }

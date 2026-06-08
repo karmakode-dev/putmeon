@@ -33,6 +33,8 @@ export interface PlaylistResult {
   trackCount: number
   shareId?: string
   shareUrl?: string
+  exportCount?: number
+  exportRecorded?: boolean
 }
 
 export interface SharedPlaylist {
@@ -41,6 +43,7 @@ export interface SharedPlaylist {
   description: string | null
   curatorName: string | null
   songs: MatchedSong[]
+  exportCount: number
 }
 
 export type EntrySource = 'scan' | 'curate'
