@@ -6,7 +6,7 @@ create or replace function public.record_playlist_export(
   p_spotify_user_id text,
   p_platform text default 'spotify'
 )
-returns table (new_export_count integer, was_recorded boolean)
+returns table (export_count integer, recorded boolean)
 language plpgsql
 security definer
 set search_path = public
