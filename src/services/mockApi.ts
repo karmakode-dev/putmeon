@@ -87,6 +87,7 @@ const MOCK_PROFILE: PublicProfile = {
   displayName: 'playorrrr',
   avatarUrl: null,
   bio: 'Curator. Overthinker. Always on the aux.',
+  memberSince: '2024-01-15T00:00:00.000Z',
   totalPlaylists: 4,
   totalExports: 2100,
   playlists: [

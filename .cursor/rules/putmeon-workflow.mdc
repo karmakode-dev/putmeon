@@ -19,5 +19,6 @@ alwaysApply: true
 
 - Match existing patterns in touched files; minimal diffs.
 - Curate and scan session storage must stay isolated (`flowStorage.ts`).
-- Shared playlists live at `/p/:id` via `SharedPlaylistView`, not `/review`.
+- Shared playlists: `/p/:id` via `SharedPlaylistView`, not `/review`.
+- Profiles: `/@handle` uses route `:username` (param includes `@`); never `@:username` (RR v7 bug).
 - Update `FILE_MAP.md` when moving, renaming, or adding major features.

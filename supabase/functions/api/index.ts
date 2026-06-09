@@ -286,7 +286,7 @@ async function handleGetPublicProfile(req: Request, username: string): Promise<R
   const supabase = getServiceClient()
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('id, username, avatar_url, display_name, bio')
+    .select('id, username, avatar_url, display_name, bio, created_at')
     .eq('username', normalized)
     .maybeSingle()
 
@@ -314,6 +314,7 @@ async function handleGetPublicProfile(req: Request, username: string): Promise<R
       displayName: profile.display_name?.trim() || profile.username,
       avatarUrl: profile.avatar_url ?? null,
       bio: profile.bio?.trim() || null,
+      memberSince: profile.created_at ?? null,
       totalPlaylists: rows.length,
       totalExports,
       playlists: rows.map((row) => ({

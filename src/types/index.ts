@@ -59,6 +59,7 @@ export interface PublicProfile {
   displayName: string
   avatarUrl: string | null
   bio: string | null
+  memberSince: string | null
   totalPlaylists: number
   totalExports: number
   playlists: PublicProfilePlaylist[]
