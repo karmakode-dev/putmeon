@@ -46,4 +46,22 @@ export interface SharedPlaylist {
   exportCount: number
 }
 
+export interface PublicProfilePlaylist {
+  publicId: string
+  name: string
+  description: string | null
+  songCount: number
+  exportCount: number
+}
+
+export interface PublicProfile {
+  username: string
+  displayName: string
+  avatarUrl: string | null
+  bio: string | null
+  totalPlaylists: number
+  totalExports: number
+  playlists: PublicProfilePlaylist[]
+}
+
 export type EntrySource = 'scan' | 'curate'

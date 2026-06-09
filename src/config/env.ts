@@ -31,10 +31,22 @@ export function formatExportCount(count: number): string {
 }
 
 /** Shared playlist subtitle: song count plus optional export count. */
+/** Shared playlist subtitle: song count plus optional export count. */
 export function formatSharedPlaylistMeta(songCount: number, exportCount: number): string {
   const songs = `${songCount} song${songCount === 1 ? '' : 's'}`
   if (exportCount <= 0) return songs
   return `${songs} · ${formatExportCount(exportCount)}`
+}
+
+export function profileUrl(username: string): string {
+  const base = env.appUrl.replace(/\/$/, '')
+  return `${base}/@${encodeURIComponent(username)}`
+}
+
+export function formatStatCount(count: number): string {
+  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
+  if (count >= 1_000) return `${(count / 1_000).toFixed(1).replace(/\.0$/, '')}K`
+  return String(count)
 }
 
 export function isBackendConfigured(): boolean {

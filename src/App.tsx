@@ -16,6 +16,7 @@ import PrivacyPage from './pages/PrivacyPage'
 import TermsPage from './pages/TermsPage'
 import ContactPage from './pages/ContactPage'
 import NotFoundPage from './pages/NotFoundPage'
+import ProfilePage from './pages/ProfilePage'
 
 function FlowLayout() {
   return <Layout showFooter={false} />
@@ -35,6 +36,7 @@ export default function App() {
                 <Route path="contact" element={<ContactPage />} />
                 <Route path="auth/callback" element={<AuthCallbackPage />} />
                 <Route path="onboarding" element={<OnboardingPage />} />
+                <Route path=":username" element={<ProfilePage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
               <Route element={<FlowLayout />}>

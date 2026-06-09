@@ -42,6 +42,19 @@ function toPendingSongs(songs: DetectedSong[]): MatchedSong[] {
   return songs.map((s) => ({ ...s, status: 'pending' as const }))
 }
 
+function isPublicUsername(value: string): boolean {
+  const username = value.trim().toLowerCase()
+  if (username.length < 3 || username.length > 20) return false
+  if (!/^[a-z0-9_.]+$/.test(username)) return false
+  if (username.startsWith('.') || username.endsWith('.')) return false
+  const reserved = new Set(['putmeon', 'pmo', 'admin', 'support', 'staff', 'official', 'team'])
+  return !reserved.has(username)
+}
+
+function songCountFromJson(songs: unknown): number {
+  return Array.isArray(songs) ? songs.length : 0
+}
+
 async function getMatchToken(req: Request): Promise<string | null> {
   const sessionId = getSpotifySessionId(req)
   if (sessionId) {
@@ -264,6 +277,57 @@ async function handleSaveSharedPlaylist(req: Request): Promise<Response> {
   return jsonResponse({ publicId, shareUrl }, req)
 }
 
+async function handleGetPublicProfile(req: Request, username: string): Promise<Response> {
+  const normalized = username.trim().toLowerCase()
+  if (!isPublicUsername(normalized)) {
+    return errorResponse('Profile not found.', req, 404)
+  }
+
+  const supabase = getServiceClient()
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('id, username, avatar_url, display_name, bio')
+    .eq('username', normalized)
+    .maybeSingle()
+
+  if (profileError || !profile?.username) {
+    return errorResponse('Profile not found.', req, 404)
+  }
+
+  const { data: playlists, error: playlistsError } = await supabase
+    .from('shared_playlists')
+    .select('public_id, name, description, songs, export_count, created_at')
+    .eq('owner_id', profile.id)
+    .order('created_at', { ascending: false })
+
+  if (playlistsError) {
+    console.error('profile playlists error:', playlistsError)
+    return errorResponse('Failed to load profile.', req, 500)
+  }
+
+  const rows = playlists ?? []
+  const totalExports = rows.reduce((sum, row) => sum + (row.export_count ?? 0), 0)
+
+  return jsonResponse(
+    {
+      username: profile.username,
+      displayName: profile.display_name?.trim() || profile.username,
+      avatarUrl: profile.avatar_url ?? null,
+      bio: profile.bio?.trim() || null,
+      totalPlaylists: rows.length,
+      totalExports,
+      playlists: rows.map((row) => ({
+        publicId: row.public_id,
+        name: row.name,
+        description: row.description,
+        songCount: songCountFromJson(row.songs),
+        exportCount: row.export_count ?? 0,
+      })),
+    },
+    req
+  )
+}
+
 async function handleGetSharedPlaylist(req: Request, publicId: string): Promise<Response> {
   if (!publicId || publicId.length > 32) {
     return errorResponse('Invalid playlist id.', req, 400)
@@ -375,6 +439,10 @@ Deno.serve(async (req) => {
     if (path.startsWith('/playlists/') && req.method === 'GET') {
       const publicId = path.slice('/playlists/'.length)
       return await handleGetSharedPlaylist(req, publicId)
+    }
+    if (path.startsWith('/profiles/') && req.method === 'GET') {
+      const username = decodeURIComponent(path.slice('/profiles/'.length))
+      return await handleGetPublicProfile(req, username)
     }
 
     return errorResponse(`Not found: ${path}`, req, 404)

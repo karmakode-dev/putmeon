@@ -1,5 +1,5 @@
 import { env } from '../config/env'
-import type { DetectedSong, MatchedSong, PlaylistResult, ScanResult, SharedPlaylist } from '../types'
+import type { DetectedSong, MatchedSong, PlaylistResult, ScanResult, SharedPlaylist, PublicProfile } from '../types'
 
 type ApiModule = typeof import('./mockApi') | typeof import('./apiClient')
 
@@ -57,4 +57,9 @@ export async function fetchSharedPlaylist(publicId: string): Promise<SharedPlayl
   return api.fetchSharedPlaylist(publicId)
 }
 
-export type { DetectedSong, MatchedSong, PlaylistResult, ScanResult, SharedPlaylist }
+export async function fetchPublicProfile(username: string): Promise<PublicProfile> {
+  const api = await loadApi()
+  return api.fetchPublicProfile(username)
+}
+
+export type { DetectedSong, MatchedSong, PlaylistResult, ScanResult, SharedPlaylist, PublicProfile, PublicProfilePlaylist } from '../types'

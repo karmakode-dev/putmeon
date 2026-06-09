@@ -1,6 +1,6 @@
 import { matchSongsToSpotify } from '../data/mockSongs'
 import { detectSongsFromImages } from './songDetection'
-import type { DetectedSong, MatchedSong, PlaylistResult, ScanResult, SharedPlaylist } from '../types'
+import type { DetectedSong, MatchedSong, PlaylistResult, ScanResult, SharedPlaylist, PublicProfile } from '../types'
 import { sharedPlaylistUrl } from '../config/env'
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -80,6 +80,52 @@ export async function fetchSharedPlaylist(publicId: string): Promise<SharedPlayl
   const playlist = mockSharedPlaylists.get(publicId)
   if (!playlist) throw new Error('Playlist not found.')
   return { ...playlist, exportCount: playlist.exportCount ?? 0 }
+}
+
+const MOCK_PROFILE: PublicProfile = {
+  username: 'playorrrr',
+  displayName: 'playorrrr',
+  avatarUrl: null,
+  bio: 'Curator. Overthinker. Always on the aux.',
+  totalPlaylists: 4,
+  totalExports: 2100,
+  playlists: [
+    {
+      publicId: 'mock-late-night',
+      name: 'late night drive',
+      description: 'smooth vibes for late night drives.',
+      songCount: 37,
+      exportCount: 2100,
+    },
+    {
+      publicId: 'mock-rnb',
+      name: 'rnb essentials',
+      description: 'slow burns and late texts.',
+      songCount: 24,
+      exportCount: 890,
+    },
+    {
+      publicId: 'mock-throwbacks',
+      name: 'throwback hour',
+      description: '2000s hits that still hit.',
+      songCount: 42,
+      exportCount: 540,
+    },
+    {
+      publicId: 'mock-afrobeats',
+      name: 'afrobeats rotation',
+      description: 'current rotation, no skips.',
+      songCount: 31,
+      exportCount: 320,
+    },
+  ],
+}
+
+export async function fetchPublicProfile(username: string): Promise<PublicProfile> {
+  await delay(400)
+  const normalized = username.trim().toLowerCase()
+  if (normalized === MOCK_PROFILE.username) return MOCK_PROFILE
+  throw new Error('Profile not found.')
 }
 
 export async function createSpotifyPlaylist(

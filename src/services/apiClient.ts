@@ -1,4 +1,4 @@
-import type { DetectedSong, MatchedSong, PlaylistResult, ScanResult, SharedPlaylist } from '../types'
+import type { DetectedSong, MatchedSong, PlaylistResult, ScanResult, SharedPlaylist, PublicProfile } from '../types'
 import { env, sharedPlaylistUrl } from '../config/env'
 import { getAccessToken } from '../lib/supabaseClient'
 import { clearSpotifySessionId, getSpotifySessionId, setSpotifySessionId } from './spotifySession'
@@ -164,6 +164,10 @@ export async function saveSharedPlaylist(
 
 export async function fetchSharedPlaylist(publicId: string): Promise<SharedPlaylist> {
   return request<SharedPlaylist>(`/playlists/${encodeURIComponent(publicId)}`)
+}
+
+export async function fetchPublicProfile(username: string): Promise<PublicProfile> {
+  return request<PublicProfile>(`/profiles/${encodeURIComponent(username.trim().toLowerCase())}`)
 }
 
 export { clearSpotifySessionId, getSpotifySessionId }
