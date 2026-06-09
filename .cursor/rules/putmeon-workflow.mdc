@@ -1,0 +1,23 @@
+---
+description: PutMeOn doc workflow — read FILE_MAP first, minimize context loading
+alwaysApply: true
+---
+
+# PutMeOn agent workflow
+
+**PMO** = PutMeOn (shorthand).
+
+## Documentation
+
+1. Read `FILE_MAP.md` first for every task.
+2. Open only source files listed there for the current task.
+3. Read `PROJECT_CONTEXT.md` only when product or architectural context is required.
+4. Do **not** read `docs/archive/` (including archived `HANDOFF.md`) unless the user explicitly asks.
+5. Do **not** create, update, or maintain handoff documents.
+
+## Code
+
+- Match existing patterns in touched files; minimal diffs.
+- Curate and scan session storage must stay isolated (`flowStorage.ts`).
+- Shared playlists live at `/p/:id` via `SharedPlaylistView`, not `/review`.
+- Update `FILE_MAP.md` when moving, renaming, or adding major features.

@@ -31,5 +31,7 @@ supabase/.temp/
 supabase/.env.local
 
 # Internal docs (local only)
-HANDOFF.md
 PROJECT_CONTEXT.md
+FILE_MAP.md
+AGENTS.md
+docs/archive/
